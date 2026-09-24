@@ -10,12 +10,15 @@ public sealed class DialogueLine
 {
     public bool Enabled { get; set; } = true;
     public string Text { get; set; } = "";
+    public string Context { get; set; } = "ambient";
 }
 
 public sealed class AppSettings
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
     public bool BubbleEnabled { get; set; } = true;
+    public bool AffectionEnabled { get; set; } = true;
+    public int InteractionBubbleProbabilityPercent { get; set; } = 25;
     public int CheckIntervalSeconds { get; set; } = 300;
     public int ProbabilityPercent { get; set; } = 20;
     public int CooldownSeconds { get; set; } = 600;
@@ -24,7 +27,11 @@ public sealed class AppSettings
     {
         new() { Text = "做操呢，别盯着我看。" },
         new() { Text = "你也起来活动两下。" },
-        new() { Text = "先别吵，正在扩胸。" }
+        new() { Text = "先别吵，正在扩胸。" },
+        new() { Text = "摸我头干嘛……我还在做操呢。", Context = "click" },
+        new() { Text = "放这儿是吧？行，我接着练。", Context = "drag" },
+        new() { Text = "给你一个，别耽误我做操。", Context = "kiss" },
+        new() { Text = "看完了？扶我起来继续。", Context = "roll" }
     };
     public double Scale { get; set; } = 1.0;
     public double Speed { get; set; } = 1.0;
@@ -38,15 +45,28 @@ public sealed class AppSettings
     {
         CheckIntervalSeconds = Math.Clamp(CheckIntervalSeconds, 5, 3600);
         ProbabilityPercent = Math.Clamp(ProbabilityPercent, 0, 100);
+        InteractionBubbleProbabilityPercent = Math.Clamp(InteractionBubbleProbabilityPercent, 0, 100);
         CooldownSeconds = Math.Clamp(CooldownSeconds, 0, 86400);
         BubbleSeconds = Math.Clamp(BubbleSeconds, 1, 30);
         Scale = double.IsFinite(Scale) ? Math.Clamp(Scale, 0.5, 2.0) : 1.0;
         Speed = double.IsFinite(Speed) ? Math.Clamp(Speed, 0.25, 3.0) : 1.0;
         Lines ??= new();
+        if (Version < 2)
+        {
+            Lines.AddRange(new[]
+            {
+                new DialogueLine { Text = "摸我头干嘛……我还在做操呢。", Context = "click" },
+                new DialogueLine { Text = "放这儿是吧？行，我接着练。", Context = "drag" },
+                new DialogueLine { Text = "给你一个，别耽误我做操。", Context = "kiss" },
+                new DialogueLine { Text = "看完了？扶我起来继续。", Context = "roll" }
+            });
+            Version = 2;
+        }
         Lines = Lines.Where(line => line is not null).Select(line => new DialogueLine
         {
             Enabled = line.Enabled,
-            Text = (line.Text ?? "").Trim()
+            Text = (line.Text ?? "").Trim(),
+            Context = line.Context is "click" or "drag" or "kiss" or "roll" ? line.Context : "ambient"
         }).Take(200).ToList();
         ActionId ??= "stretch";
         if (Left is double left && !double.IsFinite(left)) Left = null;

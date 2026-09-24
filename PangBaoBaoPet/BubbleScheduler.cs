@@ -23,7 +23,7 @@ public sealed class BubbleScheduler
         _nextCheck = now.AddSeconds(settings.CheckIntervalSeconds);
         if (!settings.BubbleEnabled || !visible || IsShowing || now < _cooldownUntil) return null;
         var choices = settings.Lines.Select((line, index) => (line, index))
-            .Where(x => x.line.Enabled && !string.IsNullOrWhiteSpace(x.line.Text)).ToArray();
+            .Where(x => x.line.Enabled && x.line.Context == "ambient" && !string.IsNullOrWhiteSpace(x.line.Text)).ToArray();
         if (choices.Length == 0 || random.Next(100) >= settings.ProbabilityPercent) return null;
         var candidates = choices.Length > 1 ? choices.Where(x => x.index != _lastLine).ToArray() : choices;
         var selected = candidates[random.Next(candidates.Length)];

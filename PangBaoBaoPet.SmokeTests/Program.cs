@@ -37,6 +37,24 @@ settings.Lines.Add(new DialogueLine { Text = "恢复" });
 Check(scheduler.Tick(start.AddSeconds(50), settings, rng, false) is null, "Hidden pet triggered");
 Check(scheduler.Tick(start.AddSeconds(55), settings, rng, true) == "恢复", "Visible pet did not trigger");
 Check(scheduler.Tick(start.AddSeconds(55), settings, rng, true) is null, "Catch-up bubble triggered");
+var affection = new AffectionService(new PetState { Affection = 29 });
+var reward = affection.Register(PetInteraction.Click, start);
+Check(reward.Points == 1 && reward.NewMilestones.SequenceEqual(new[] { "kiss" }), "Kiss threshold did not trigger once");
+Check(affection.Register(PetInteraction.Click, start.AddSeconds(1)).Points == 0, "Click cooldown ignored");
+Check(affection.NextPending() == "kiss", "First reward was not queued");
+affection.Complete("kiss");
+Check(affection.NextPending() is null, "Completed reward remained pending");
+affection.State.Affection = 69;
+var rollReward = affection.Register(PetInteraction.Drag, start.AddSeconds(61));
+Check(rollReward.NewMilestones.SequenceEqual(new[] { "roll" }), "Roll threshold did not trigger once");
+Check(affection.Register(PetInteraction.Drag, start.AddSeconds(62)).Points == 0, "Drag cooldown ignored");
+Check(affection.NextPending() == "roll", "Roll reward was not queued");
+var recoveredUnlock = new PetState { Affection = 30 };
+recoveredUnlock.Normalize();
+Check(recoveredUnlock.PendingMilestones.SequenceEqual(new[] { "kiss" }), "Threshold lost between scoring and queueing");
+var cap = new AffectionService(new PetState());
+for (var i = 0; i < 10; i++) cap.Register(PetInteraction.Click, start.AddSeconds(i * 4));
+Check(cap.State.Affection == 6, "Rolling score cap ignored");
 settings.ProbabilityPercent = -12;
 settings.Scale = double.PositiveInfinity;
 settings.Normalize();
@@ -55,6 +73,23 @@ try
     Check(recovered.ProbabilityPercent == 20 && warning is not null, "Corrupt settings did not recover from backup");
     var reread = SettingsStore.Load(out var secondWarning);
     Check(reread.ProbabilityPercent == 20 && secondWarning is null, "Recovered primary was not restored");
+    File.WriteAllText(SettingsStore.FilePath,
+        "{\"Version\":1,\"Lines\":[{\"Enabled\":true,\"Text\":\"旧台词\"}],\"ProbabilityPercent\":42}");
+    var migrated = SettingsStore.Load(out var migrationWarning);
+    Check(migrationWarning is null && migrated.Version == 2 && migrated.ProbabilityPercent == 42 &&
+          migrated.Lines.Any(x => x.Text == "旧台词" && x.Context == "ambient") &&
+          migrated.Lines.Any(x => x.Context == "click"), "Old dialogue settings were not migrated");
+    PetStateStore.Save(affection.State);
+    var persisted = PetStateStore.Load(out var stateWarning);
+    Check(stateWarning is null && persisted.Affection == affection.State.Affection &&
+          persisted.PendingMilestones.SequenceEqual(new[] { "roll" }) &&
+          persisted.CompletedMilestones.SequenceEqual(new[] { "kiss" }), "Affection state did not persist");
+    persisted.Affection = 72;
+    PetStateStore.Save(persisted);
+    File.WriteAllText(PetStateStore.FilePath, "{ invalid json");
+    var restoredState = PetStateStore.Load(out var restoredWarning);
+    Check(restoredWarning is not null && restoredState.Affection == affection.State.Affection,
+        "Corrupt affection state did not recover");
 }
 finally
 {
@@ -63,4 +98,4 @@ finally
         Directory.Delete(full, recursive: true);
     Environment.SetEnvironmentVariable("PANGBAOBAO_CONFIG_DIR", null);
 }
-Console.WriteLine("PASS: bubble rules, input normalization, atomic settings backup recovery");
+Console.WriteLine("PASS: bubble rules, affection thresholds and cooldowns, persistence backup recovery");

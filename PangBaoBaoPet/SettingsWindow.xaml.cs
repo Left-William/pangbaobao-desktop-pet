@@ -8,17 +8,29 @@ namespace PangBaoBaoPet;
 
 public partial class SettingsWindow : Window
 {
+    private sealed record DialogueContextChoice(string Id, string Label);
     private readonly AppSettings _source;
     private readonly ObservableCollection<DialogueLine> _lines;
     public AppSettings? ResultSettings { get; private set; }
 
-    public SettingsWindow(AppSettings settings)
+    public SettingsWindow(AppSettings settings, int affection)
     {
         InitializeComponent();
         _source = settings;
-        _lines = new ObservableCollection<DialogueLine>(settings.Lines.Select(x => new DialogueLine { Enabled = x.Enabled, Text = x.Text }));
+        _lines = new ObservableCollection<DialogueLine>(settings.Lines.Select(x => new DialogueLine { Enabled = x.Enabled, Text = x.Text, Context = x.Context }));
         LinesGrid.ItemsSource = _lines;
+        AffectionStatusText.Text = $"当前好感度 {affection}/100  ·  飞吻 30  ·  打滚 70";
+        ContextColumn.ItemsSource = new[]
+        {
+            new DialogueContextChoice("ambient", "日常"),
+            new DialogueContextChoice("click", "摸头"),
+            new DialogueContextChoice("drag", "拖动"),
+            new DialogueContextChoice("kiss", "飞吻"),
+            new DialogueContextChoice("roll", "打滚")
+        };
         BubbleEnabledBox.IsChecked = settings.BubbleEnabled;
+        AffectionEnabledBox.IsChecked = settings.AffectionEnabled;
+        InteractionProbabilityBox.Text = settings.InteractionBubbleProbabilityPercent.ToString();
         IntervalBox.Text = settings.CheckIntervalSeconds.ToString();
         ProbabilityBox.Text = settings.ProbabilityPercent.ToString();
         CooldownBox.Text = settings.CooldownSeconds.ToString();
@@ -46,16 +58,19 @@ public partial class SettingsWindow : Window
         LinesGrid.CommitEdit(DataGridEditingUnit.Row, true);
         if (!ReadNumber(IntervalBox, 5, 3600, out var interval) ||
             !ReadNumber(ProbabilityBox, 0, 100, out var probability) ||
+            !ReadNumber(InteractionProbabilityBox, 0, 100, out var interactionProbability) ||
             !ReadNumber(CooldownBox, 0, 86400, out var cooldown) ||
             !ReadNumber(DurationBox, 1, 30, out var duration)) return;
         ResultSettings = new AppSettings
         {
             BubbleEnabled = BubbleEnabledBox.IsChecked == true,
+            AffectionEnabled = AffectionEnabledBox.IsChecked == true,
+            InteractionBubbleProbabilityPercent = interactionProbability,
             CheckIntervalSeconds = interval,
             ProbabilityPercent = probability,
             CooldownSeconds = cooldown,
             BubbleSeconds = duration,
-            Lines = _lines.Select(x => new DialogueLine { Enabled = x.Enabled, Text = x.Text }).ToList(),
+            Lines = _lines.Select(x => new DialogueLine { Enabled = x.Enabled, Text = x.Text, Context = x.Context }).ToList(),
             Scale = _source.Scale,
             Speed = _source.Speed,
             Topmost = _source.Topmost,

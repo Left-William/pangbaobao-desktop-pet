@@ -1,98 +1,217 @@
 [
   {
     "id": "stretch",
-    "name": "伸展（补帧版）",
-    "source": "七组关键姿势 + RIFE 离线补帧",
-    "fps": 24,
-    "frames": 36,
-    "displayHeight": 361
+    "name": "伸展",
+    "assetDirectory": "stretch_v03",
+    "frames": 18,
+    "durationsMs": [
+      400,
+      170,
+      170,
+      170,
+      170,
+      170,
+      170,
+      170,
+      170,
+      480,
+      170,
+      170,
+      170,
+      170,
+      170,
+      170,
+      170,
+      420
+    ],
+    "displayHeight": 361,
+    "source": "从 v0.2 补帧中筛选可靠姿势，使用变速停顿；原素材目录保留"
   },
   {
     "id": "stretch_classic",
     "name": "伸展（原版对照）",
-    "source": "手臂修正版透明帧，重排并清理边缘",
-    "fps": 8,
     "frames": 13,
+    "fps": 8,
     "displayHeight": 361,
     "includeInRoutine": false
   },
   {
     "id": "chest",
     "name": "扩胸",
-    "source": "扩胸.gif",
-    "durationsMs": [
-      150,
-      150,
-      150,
-      150,
-      150,
-      260
-    ],
     "frames": 6,
+    "durationsMs": [
+      500,
+      480,
+      500,
+      620,
+      480,
+      720
+    ],
     "displayHeight": 326
   },
   {
     "id": "bend",
     "name": "体前屈",
-    "source": "体前屈.gif",
-    "durationsMs": [
-      120,
-      120,
-      120,
-      120,
-      120,
-      220
-    ],
     "frames": 6,
+    "durationsMs": [
+      550,
+      500,
+      550,
+      650,
+      550,
+      700
+    ],
     "displayHeight": 326
   },
   {
     "id": "twist",
-    "name": "转体（补帧版）",
-    "source": "转体.gif 清边后经 RIFE 离线补帧",
-    "fps": 24,
-    "frames": 24,
-    "displayHeight": 326
+    "name": "转体",
+    "assetDirectory": "twist_v03",
+    "frames": 12,
+    "durationsMs": [
+      400,
+      200,
+      200,
+      200,
+      300,
+      420,
+      250,
+      250,
+      250,
+      300,
+      200,
+      500
+    ],
+    "displayHeight": 326,
+    "source": "从 v0.2 补帧中筛选可靠姿势，使用变速停顿；原素材目录保留"
   },
   {
     "id": "twist_classic",
     "name": "转体（原版对照）",
-    "source": "转体.gif，清理边缘",
-    "durationsMs": [150, 150, 150, 150, 150, 280],
     "frames": 6,
+    "durationsMs": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      280
+    ],
     "displayHeight": 326,
     "includeInRoutine": false
   },
   {
     "id": "tiptoe",
-    "name": "踮脚（补帧版）",
-    "source": "踮脚.gif 清边后经 RIFE 离线补帧",
-    "fps": 24,
-    "frames": 20,
-    "displayHeight": 326
+    "name": "踮脚",
+    "assetDirectory": "tiptoe_v03",
+    "frames": 12,
+    "durationsMs": [
+      420,
+      200,
+      200,
+      260,
+      280,
+      380,
+      250,
+      250,
+      260,
+      280,
+      250,
+      550
+    ],
+    "displayHeight": 326,
+    "source": "从 v0.2 补帧中筛选可靠姿势，使用变速停顿；原素材目录保留"
   },
   {
     "id": "tiptoe_classic",
     "name": "踮脚（原版对照）",
-    "source": "踮脚.gif，清理边缘",
-    "durationsMs": [140, 140, 140, 140, 280],
     "frames": 5,
+    "durationsMs": [
+      140,
+      140,
+      140,
+      140,
+      280
+    ],
     "displayHeight": 326,
     "includeInRoutine": false
   },
   {
     "id": "sidebend",
     "name": "侧弯",
-    "source": "伸展与侧弯.gif",
-    "durationsMs": [
-      280,
-      110,
-      110,
-      140,
-      140,
-      320
-    ],
     "frames": 6,
+    "durationsMs": [
+      650,
+      500,
+      450,
+      550,
+      500,
+      750
+    ],
     "displayHeight": 326
+  },
+  {
+    "id": "shy",
+    "name": "摸头娇羞",
+    "frames": 3,
+    "durationsMs": [
+      300,
+      1450,
+      350
+    ],
+    "frameDisplayHeights": [
+      361,
+      361,
+      361
+    ],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
+  },
+  {
+    "id": "kiss",
+    "name": "飞吻",
+    "frames": 4,
+    "durationsMs": [
+      350,
+      750,
+      750,
+      500
+    ],
+    "frameDisplayHeights": [
+      361,
+      361,
+      361,
+      361
+    ],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
+  },
+  {
+    "id": "roll",
+    "name": "打滚",
+    "frames": 7,
+    "durationsMs": [
+      450,
+      750,
+      750,
+      850,
+      750,
+      750,
+      550
+    ],
+    "frameDisplayHeights": [
+      361,
+      260,
+      190,
+      190,
+      190,
+      260,
+      361
+    ],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
   }
 ]

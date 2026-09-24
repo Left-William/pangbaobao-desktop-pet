@@ -8,5 +8,6 @@
   <ItemGroup>
     <Compile Include="../PangBaoBaoPet/AppSettings.cs" Link="AppSettings.cs" />
     <Compile Include="../PangBaoBaoPet/BubbleScheduler.cs" Link="BubbleScheduler.cs" />
+    <Compile Include="../PangBaoBaoPet/AffectionService.cs" Link="AffectionService.cs" />
   </ItemGroup>
 </Project>
