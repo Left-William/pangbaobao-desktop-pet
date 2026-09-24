@@ -63,7 +63,7 @@
 
 ## 三分钟上桌
 
-1. 从 [Releases](https://github.com/Left-William/pangbaobao-desktop-pet/releases/latest) 下载 `胖宝宝独立桌宠-0.2.0.zip`，解压整个文件夹。
+1. 从 [Releases](https://github.com/Left-William/pangbaobao-desktop-pet/releases/latest) 下载 `PangBaoBaoPet-0.2.0-win-x64.zip`，解压整个文件夹。
 2. 安装 [Microsoft .NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)（Windows 10/11 x64）。
 3. 双击 `PangBaoBaoPet.exe`。左键拖动人物；右键选择动作、速度、缩放、置顶、气泡设置和退出。
 

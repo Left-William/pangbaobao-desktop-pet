@@ -1,6 +1,6 @@
 # 胖宝宝独立桌宠 v0.2.0
 
-桌面广播体操继续营业。解压 `胖宝宝独立桌宠-0.2.0.zip` 后运行 `PangBaoBaoPet.exe`；需要 Windows 10/11 x64 与 .NET 8 Desktop Runtime。
+桌面广播体操继续营业。下载并解压 `PangBaoBaoPet-0.2.0-win-x64.zip` 后运行 `PangBaoBaoPet.exe`；需要 Windows 10/11 x64 与 .NET 8 Desktop Runtime。
 
 ## 这次更新
 
