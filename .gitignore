@@ -1,0 +1,21 @@
+# .NET build and local IDE state
+**/bin/
+**/obj/
+dist/
+.vs/
+*.user
+*.suo
+
+# Python cache and local experiments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+work/
+
+# Local-only settings and OS noise
+settings.json
+settings.json.bak
+*.log
+Thumbs.db
+.DS_Store

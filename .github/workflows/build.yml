@@ -1,0 +1,22 @@
+name: Windows build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Smoke tests
+        run: dotnet run --project PangBaoBaoPet.SmokeTests/PangBaoBaoPet.SmokeTests.csproj -c Release
+      - name: Publish desktop app
+        run: dotnet publish PangBaoBaoPet/PangBaoBaoPet.csproj -c Release --self-contained false -o dist/PangBaoBaoPet
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PangBaoBaoPet-Windows
+          path: dist/PangBaoBaoPet/

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "stretch",
+    "name": "伸展（补帧版）",
+    "source": "七组关键姿势 + RIFE 离线补帧",
+    "fps": 24,
+    "frames": 36,
+    "displayHeight": 361
+  },
+  {
+    "id": "stretch_classic",
+    "name": "伸展（原版对照）",
+    "source": "手臂修正版透明帧，重排并清理边缘",
+    "fps": 8,
+    "frames": 13,
+    "displayHeight": 361,
+    "includeInRoutine": false
+  },
+  {
+    "id": "chest",
+    "name": "扩胸",
+    "source": "扩胸.gif",
+    "durationsMs": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      260
+    ],
+    "frames": 6,
+    "displayHeight": 326
+  },
+  {
+    "id": "bend",
+    "name": "体前屈",
+    "source": "体前屈.gif",
+    "durationsMs": [
+      120,
+      120,
+      120,
+      120,
+      120,
+      220
+    ],
+    "frames": 6,
+    "displayHeight": 326
+  },
+  {
+    "id": "twist",
+    "name": "转体（补帧版）",
+    "source": "转体.gif 清边后经 RIFE 离线补帧",
+    "fps": 24,
+    "frames": 24,
+    "displayHeight": 326
+  },
+  {
+    "id": "twist_classic",
+    "name": "转体（原版对照）",
+    "source": "转体.gif，清理边缘",
+    "durationsMs": [150, 150, 150, 150, 150, 280],
+    "frames": 6,
+    "displayHeight": 326,
+    "includeInRoutine": false
+  },
+  {
+    "id": "tiptoe",
+    "name": "踮脚（补帧版）",
+    "source": "踮脚.gif 清边后经 RIFE 离线补帧",
+    "fps": 24,
+    "frames": 20,
+    "displayHeight": 326
+  },
+  {
+    "id": "tiptoe_classic",
+    "name": "踮脚（原版对照）",
+    "source": "踮脚.gif，清理边缘",
+    "durationsMs": [140, 140, 140, 140, 280],
+    "frames": 5,
+    "displayHeight": 326,
+    "includeInRoutine": false
+  },
+  {
+    "id": "sidebend",
+    "name": "侧弯",
+    "source": "伸展与侧弯.gif",
+    "durationsMs": [
+      280,
+      110,
+      110,
+      140,
+      140,
+      320
+    ],
+    "frames": 6,
+    "displayHeight": 326
+  }
+]

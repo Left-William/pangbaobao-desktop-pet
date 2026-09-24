@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-label="胖宝宝桌面广播体操：一位室友，六节操，持续占领桌面">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17152e"/>
+      <stop offset="0.55" stop-color="#252347"/>
+      <stop offset="1" stop-color="#101e33"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a7f3d0"/>
+      <stop offset="0.52" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#f9a8d4"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <rect width="1200" height="380" rx="28" fill="url(#bg)"/>
+  <circle cx="1020" cy="182" r="158" fill="none" stroke="#5eead4" stroke-opacity=".17" stroke-width="32"/>
+  <circle cx="1020" cy="182" r="105" fill="none" stroke="#f9a8d4" stroke-opacity=".18" stroke-width="2" stroke-dasharray="9 12"/>
+  <path d="M910 178 L830 208 M910 178 L835 145 M1130 178 L1200 208 M1130 178 L1190 145" fill="none" stroke="#7dd3fc" stroke-width="17" stroke-linecap="round" opacity=".28" filter="url(#glow)"/>
+  <path d="M910 178 L837 208 M910 178 L843 145 M1130 178 L1197 208 M1130 178 L1192 145" fill="none" stroke="url(#neon)" stroke-width="9" stroke-linecap="round" opacity=".88"/>
+  <circle cx="1020" cy="115" r="31" fill="#f9c7ac"/>
+  <path d="M988 109 Q998 72 1025 78 Q1052 79 1053 109" fill="#18202b"/>
+  <path d="M995 119 Q1007 123 1019 119 M1022 119 Q1035 123 1046 119" fill="none" stroke="#263040" stroke-width="4"/>
+  <path d="M995 138 Q1020 153 1045 138 L1074 226 Q1020 249 966 226 Z" fill="#34364f" stroke="#a6a9c5" stroke-width="2"/>
+  <path d="M1008 145 L1011 232 M1032 145 L1030 232" stroke="#ece8ef" stroke-opacity=".7" stroke-width="2"/>
+  <circle cx="995" cy="184" r="7" fill="#f5f4f8"/><circle cx="1047" cy="205" r="6" fill="#f5f4f8"/>
+  <path d="M979 232 L970 292 M1057 232 L1065 292" stroke="#151724" stroke-width="25" stroke-linecap="round"/>
+  <path d="M956 297 L976 297 M1054 297 L1077 297" stroke="#d9e0ee" stroke-width="10" stroke-linecap="round"/>
+  <text x="70" y="74" fill="#a7f3d0" font-family="Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="700" letter-spacing="5">DESKTOP EXERCISE INCIDENT · 002</text>
+  <text x="68" y="158" fill="#ffffff" font-family="Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" font-size="65" font-weight="900">胖宝宝桌面广播体操</text>
+  <text x="70" y="211" fill="#cbd5e1" font-family="Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" font-size="25">一位室友 · 六节操 · 无限存在感</text>
+  <rect x="69" y="258" width="157" height="43" rx="21" fill="#5eead4" fill-opacity=".13" stroke="#5eead4" stroke-opacity=".55"/>
+  <text x="91" y="286" fill="#c8fff0" font-family="Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" font-size="18">24 FPS × 3</text>
+  <rect x="242" y="258" width="157" height="43" rx="21" fill="#7dd3fc" fill-opacity=".13" stroke="#7dd3fc" stroke-opacity=".55"/>
+  <text x="264" y="286" fill="#d6efff" font-family="Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" font-size="18">随机气泡</text>
+  <rect x="415" y="258" width="180" height="43" rx="21" fill="#f9a8d4" fill-opacity=".12" stroke="#f9a8d4" stroke-opacity=".55"/>
+  <text x="438" y="286" fill="#ffe0f0" font-family="Microsoft YaHei UI, Noto Sans CJK SC, sans-serif" font-size="18">独立 Windows 桌宠</text>
+  <text x="71" y="342" fill="#8693ad" font-family="Consolas, monospace" font-size="16">STATUS: 做操中  ·  USER: 被监督中  ·  SYSTEM: 仍然能运行</text>
+</svg>
