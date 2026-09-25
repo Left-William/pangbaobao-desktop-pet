@@ -34,6 +34,7 @@ public partial class MainWindow : Window
     private readonly Forms.NotifyIcon _tray;
     private readonly BubbleScheduler _scheduler;
     private readonly AffectionService _affection;
+    private ConversationWindow? _chatDock;
     private readonly List<string> _bubblePages = new();
     private AppSettings _settings;
     private AnimationAction _action;
@@ -46,6 +47,7 @@ public partial class MainWindow : Window
     private bool _pendingShy;
     private bool _paused;
     private bool _pointerDown;
+    private bool _placingChatDock;
     private Point _pressPoint;
     private int _frameIndex = -1;
     private long _lastCycle;
@@ -78,6 +80,7 @@ public partial class MainWindow : Window
         Loaded += (_, _) =>
         {
             RestorePosition();
+            CreateChatDock();
             if (settingsWarning is not null || stateWarning is not null)
                 MessageBox.Show(this, string.Join("\n", new[] { settingsWarning, stateWarning }.Where(x => x is not null)), "胖宝宝桌宠");
         };
@@ -87,14 +90,23 @@ public partial class MainWindow : Window
             {
                 _actionWatch.Stop();
                 _autoDialogueRequest?.Cancel();
+                _chatDock?.CancelRequest();
+                _chatDock?.Hide();
                 if (SpeechBubble.Visibility == Visibility.Visible) HideBubble();
             }
-            else if (!_paused)
+            else
             {
-                _actionWatch.Start();
-                _scheduler.Reset(DateTimeOffset.Now, _settings);
+                if (!_paused)
+                {
+                    _actionWatch.Start();
+                    _scheduler.Reset(DateTimeOffset.Now, _settings);
+                }
+                _chatDock?.Show();
+                PlaceChatDock();
             }
         };
+        LocationChanged += (_, _) => PlaceChatDock();
+        SizeChanged += (_, _) => PlaceChatDock();
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
     }
@@ -223,7 +235,7 @@ public partial class MainWindow : Window
         var preview = new MenuItem { Header = "预览一条气泡" };
         preview.Click += (_, _) => PreviewBubble();
         menu.Items.Add(preview);
-        var chat = new MenuItem { Header = "和胖宝宝说话…" };
+        var chat = new MenuItem { Header = "展开下方对话框" };
         chat.Click += (_, _) => OpenConversation();
         menu.Items.Add(chat);
         var settings = new MenuItem { Header = "设置对话与互动…" };
@@ -731,13 +743,64 @@ public partial class MainWindow : Window
 
     private void OpenConversation()
     {
-        var installed = _actions.Where(a => a.SkinId == _settings.SkinId && a.OneShot).Select(a => a.Id).ToArray();
-        var dialog = new ConversationWindow(_action.Id, _affection.State.Affection, installed, reply =>
+        CreateChatDock();
+        _chatDock!.Expand();
+        _chatDock.Show();
+        PlaceChatDock();
+        _chatDock.Activate();
+    }
+
+    private void CreateChatDock()
+    {
+        if (_chatDock is not null) return;
+        var dock = new ConversationWindow(() =>
+            (_action.Id, _affection.State.Affection,
+                _actions.Where(a => a.SkinId == _settings.SkinId && a.OneShot).Select(a => a.Id).ToArray()), reply =>
         {
             ShowBubble(reply.Text, 4);
             if (reply.Action != "none") StartSpecial(reply.Action, firstReward: false, advanceRoutine: false);
         }) { Owner = this };
-        dialog.ShowDialog();
+        _chatDock = dock;
+        dock.LayoutModeChanged += (_, _) => PlaceChatDock();
+        dock.Closed += (_, _) => { if (ReferenceEquals(_chatDock, dock)) _chatDock = null; };
+        dock.Show();
+        PlaceChatDock();
+    }
+
+    private void PlaceChatDock()
+    {
+        if (_placingChatDock || !IsLoaded || _chatDock is not { IsVisible: true } dock) return;
+        _placingChatDock = true;
+        try
+        {
+            const double gap = 6;
+            var area = GetCurrentWorkArea();
+            var dockWidth = dock.Width;
+            var dockHeight = dock.Height;
+            var belowTop = Top + Height + gap;
+            if (belowTop + dockHeight > area.Bottom)
+            {
+                var raisedTop = area.Bottom - Height - dockHeight - gap;
+                if (raisedTop >= area.Top) Top = Math.Min(Top, raisedTop);
+                belowTop = Top + Height + gap;
+            }
+            if (belowTop + dockHeight <= area.Bottom)
+            {
+                dock.Left = Math.Clamp(Left + (Width - dockWidth) / 2, area.Left,
+                    Math.Max(area.Left, area.Right - dockWidth));
+                dock.Top = belowTop;
+            }
+            else
+            {
+                var right = Left + Width + gap;
+                var left = Left - dockWidth - gap;
+                dock.Left = right + dockWidth <= area.Right ? right :
+                    left >= area.Left ? left : Math.Clamp(Left, area.Left, Math.Max(area.Left, area.Right - dockWidth));
+                dock.Top = Math.Clamp(Top + Height - dockHeight, area.Top,
+                    Math.Max(area.Top, area.Bottom - dockHeight));
+            }
+        }
+        finally { _placingChatDock = false; }
     }
 
     private void TogglePause()
@@ -762,6 +825,7 @@ public partial class MainWindow : Window
         Width = 430 * _settings.Scale;
         Height = 490 * _settings.Scale;
         ClampToWorkArea();
+        PlaceChatDock();
         if (SpeechBubble.Visibility == Visibility.Visible) PlaceBubble();
     }
 
@@ -792,7 +856,11 @@ public partial class MainWindow : Window
             bounds.Width * transform.M11, bounds.Height * transform.M22);
     }
 
-    private void OnDisplaySettingsChanged(object? sender, EventArgs e) => Dispatcher.Invoke(ClampToWorkArea);
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e) => Dispatcher.Invoke(() =>
+    {
+        ClampToWorkArea();
+        PlaceChatDock();
+    });
 
     private void OnPowerModeChanged(object? sender, Microsoft.Win32.PowerModeChangedEventArgs e)
     {
@@ -829,6 +897,7 @@ public partial class MainWindow : Window
         _frameTimer.Stop();
         _bubbleTimer.Stop();
         _autoDialogueRequest?.Cancel();
+        _chatDock?.Close();
         _autoDialogueClient.Dispose();
         SavePetState();
         _tray.Visible = false;

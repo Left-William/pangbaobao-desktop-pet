@@ -237,6 +237,35 @@
     "includeInRoutine": true
   },
   {
+    "id": "shy",
+    "name": "摸头娇羞（关键姿势预览）",
+    "skinId": "black-tee",
+    "category": "interaction",
+    "assetDirectory": "black_shy",
+    "frames": 5,
+    "durationsMs": [260, 220, 800, 220, 320],
+    "frameHeadAnchors": [[0.50, 0.16], [0.50, 0.16], [0.51, 0.17], [0.50, 0.16], [0.50, 0.16]],
+    "frameMouthAnchors": [[0.50, 0.21], [0.50, 0.21], [0.51, 0.22], [0.50, 0.21], [0.50, 0.21]],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
+  },
+  {
+    "id": "stretch",
+    "name": "伸展（关键姿势预览）",
+    "skinId": "black-tee",
+    "category": "routine",
+    "assetDirectory": "black_stretch",
+    "frames": 5,
+    "durationsMs": [450, 400, 900, 400, 500],
+    "frameDisplayHeights": [361, 470, 361, 470, 361],
+    "frameOffsets": [[0, 0], [0, 60], [0, 0], [0, 60], [0, 0]],
+    "frameHeadAnchors": [[0.50, 0.16], [0.50, 0.18], [0.50, 0.19], [0.50, 0.18], [0.50, 0.16]],
+    "frameMouthAnchors": [[0.50, 0.21], [0.50, 0.22], [0.50, 0.24], [0.50, 0.22], [0.50, 0.21]],
+    "displayHeight": 361,
+    "includeInRoutine": false
+  },
+  {
     "id": "high_jump",
     "name": "原地跳高（关键姿势预览）",
     "skinId": "black-tee",

@@ -1,59 +1,77 @@
 <Window x:Class="PangBaoBaoPet.ConversationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="和胖宝宝说话" Width="660" Height="620" MinWidth="560" MinHeight="520"
-        WindowStartupLocation="CenterOwner" FontFamily="Microsoft YaHei UI" FontSize="14">
-    <DockPanel Margin="16">
-        <TextBlock DockPanel.Dock="Top" Text="接口地址、模型和密钥由你填写。聊天只发送你输入的文字、当前动作和好感度；不会上传照片或屏幕。"
-                   TextWrapping="Wrap" Foreground="#FF555555" Margin="0,0,0,10" />
-        <TabControl>
-            <TabItem Header="聊天">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <TextBox x:Name="ResponseBox" Grid.Row="0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                             Padding="10" Background="#FFFAFAFA" />
-                    <TextBox x:Name="InputBox" Grid.Row="1" Height="70" Margin="0,10,0,8" AcceptsReturn="True"
-                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="1000" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="SendButton" Content="发送" Width="90" Click="Send_Click" />
-                        <Button Content="取消请求" Width="90" Margin="8,0,0,0" Click="Cancel_Click" />
-                        <Button Content="关闭" Width="90" Margin="8,0,0,0" Click="Close_Click" />
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-            <TabItem Header="对话 API 设置">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <CheckBox x:Name="EnabledBox" Content="启用外部对话 API" Margin="0,0,0,10" />
-                        <TextBlock Text="完整接口地址（chat completions 兼容格式）" />
-                        <TextBox x:Name="EndpointBox" Margin="0,3,0,10" />
-                        <TextBlock Text="模型名称" />
-                        <TextBox x:Name="ModelBox" Margin="0,3,0,10" />
-                        <TextBlock Text="API 密钥（留空表示保持原密钥；密钥按 Windows 当前用户加密保存）" TextWrapping="Wrap" />
-                        <PasswordBox x:Name="KeyBox" Margin="0,3,0,10" />
-                        <CheckBox x:Name="AllowActionsBox" Content="允许对话建议动作（仍由桌宠本地规则决定能否播放）" Margin="0,0,0,10" />
-                        <CheckBox x:Name="AutoRepliesBox" Content="允许偶尔自动调用 API 回复气泡（每天最多 30 次，至少间隔 120 秒）" Margin="0,0,0,10" />
-                        <TextBlock Text="默认仅在你点击发送或测试连接时请求 API。服务可能计费。HTTPS 地址或本机 HTTP 可用。"
-                                   TextWrapping="Wrap" Foreground="#FF555555" Margin="0,0,0,12" />
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="保存配置" Width="100" Click="SaveSettings_Click" />
-                            <Button Content="测试连接" Width="100" Margin="8,0,0,0" Click="Test_Click" />
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem Header="人设">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <TextBlock Text="可自由修改角色口吻；保存后下一条消息生效，最多 8000 字。" TextWrapping="Wrap" Margin="0,0,0,8" />
-                    <TextBox x:Name="PersonaBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" MaxLength="8000" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                        <Button Content="恢复默认" Width="100" Click="ResetPersona_Click" />
-                        <Button Content="保存人设" Width="100" Margin="8,0,0,0" Click="SavePersona_Click" />
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-        </TabControl>
-    </DockPanel>
+        Title="和胖宝宝说话" Width="48" Height="48"
+        WindowStartupLocation="Manual" WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False"
+        FontFamily="Microsoft YaHei UI" FontSize="13"
+        PreviewMouseMove="Activity_MouseMove" PreviewKeyDown="Activity_KeyDown">
+    <Grid>
+        <Button x:Name="ChatIcon" Width="44" Height="44" Content="💬" FontSize="21"
+                ToolTip="和胖宝宝说话" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="#FFF9F4E8" BorderBrush="#FF34323A" BorderThickness="2"
+                Cursor="Hand" Click="Expand_Click" />
+        <Border x:Name="ChatPanel" Visibility="Collapsed" Background="#FFF9F4E8"
+                BorderBrush="#FF34323A" BorderThickness="2" CornerRadius="14" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="30"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <Button DockPanel.Dock="Right" Content="−" Width="30" Height="25" FontSize="18"
+                            ToolTip="收起成小图标" Click="Collapse_Click" />
+                    <TextBlock Text="💬  和胖宝宝说话" VerticalAlignment="Center" FontWeight="SemiBold"
+                               Foreground="#FF24232A" />
+                </DockPanel>
+                <TabControl x:Name="Sections" Grid.Row="1" SelectionChanged="Sections_SelectionChanged">
+                    <TabItem x:Name="ChatTab" Header="聊天">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="50"/><RowDefinition Height="30"/></Grid.RowDefinitions>
+                            <TextBox x:Name="ResponseBox" Grid.Row="0" IsReadOnly="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" Padding="6" Background="#FFFFFDFC" />
+                            <TextBox x:Name="InputBox" Grid.Row="1" Margin="0,5,0,4" AcceptsReturn="True"
+                                     TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="1000"
+                                     ToolTip="输入后点发送；Ctrl+Enter 也可发送" KeyDown="InputBox_KeyDown" />
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="SendButton" Content="发送" Width="64" Click="Send_Click" />
+                                <Button Content="取消请求" Width="72" Margin="6,0,0,0" Click="Cancel_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="对话 API 设置">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="8">
+                                <CheckBox x:Name="EnabledBox" Content="启用外部对话 API" Margin="0,0,0,8" />
+                                <TextBlock Text="完整接口地址（chat completions 兼容格式）" />
+                                <TextBox x:Name="EndpointBox" Margin="0,3,0,8" />
+                                <TextBlock Text="模型名称" />
+                                <TextBox x:Name="ModelBox" Margin="0,3,0,8" />
+                                <TextBlock Text="API 密钥（留空保持原密钥；按 Windows 当前用户加密保存）" TextWrapping="Wrap" />
+                                <PasswordBox x:Name="KeyBox" Margin="0,3,0,8" />
+                                <CheckBox x:Name="AllowActionsBox" Content="允许对话建议动作（仍由本地规则决定）" Margin="0,0,0,8" />
+                                <CheckBox x:Name="AutoRepliesBox" Content="允许偶尔自动调用 API 回复气泡（每天最多 30 次）" Margin="0,0,0,8" />
+                                <TextBlock Text="默认只在发送或测试连接时请求。服务可能计费；不会上传照片或屏幕。仅 HTTPS 或本机 HTTP 可用。"
+                                           TextWrapping="Wrap" Foreground="#FF555555" Margin="0,0,0,10" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="保存配置" Width="85" Click="SaveSettings_Click" />
+                                    <Button Content="测试连接" Width="85" Margin="8,0,0,0" Click="Test_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="人设">
+                        <Grid Margin="7">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <TextBlock Text="可修改角色口吻；保存后下一条消息生效，最多 8000 字。"
+                                       TextWrapping="Wrap" Margin="0,0,0,5" />
+                            <TextBox x:Name="PersonaBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" MaxLength="8000" />
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                <Button Content="恢复默认" Width="85" Click="ResetPersona_Click" />
+                                <Button Content="保存人设" Width="85" Margin="6,0,0,0" Click="SavePersona_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>

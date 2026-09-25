@@ -7,26 +7,31 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace PangBaoBaoPet;
 
 public partial class ConversationWindow : Window
 {
-    private readonly string _actionId;
-    private readonly int _affection;
-    private readonly IReadOnlyCollection<string> _installedActions;
+    private readonly Func<(string ActionId, int Affection, IReadOnlyCollection<string> InstalledActions)> _getContext;
     private readonly Action<PetReply> _onReply;
     private readonly HttpClient _client = new();
     private readonly List<DialogueTurn> _history = new();
+    private readonly DispatcherTimer _idleTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private CancellationTokenSource? _request;
     private int _configurationRevision;
+    private DateTimeOffset _lastActivity = DateTimeOffset.Now;
 
-    public ConversationWindow(string actionId, int affection, IReadOnlyCollection<string> installedActions, Action<PetReply> onReply)
+    public bool IsCollapsed { get; private set; } = true;
+    public event EventHandler? LayoutModeChanged;
+
+    public ConversationWindow(Func<(string ActionId, int Affection, IReadOnlyCollection<string> InstalledActions)> getContext,
+        Action<PetReply> onReply)
     {
         InitializeComponent();
-        _actionId = actionId;
-        _affection = affection;
-        _installedActions = installedActions;
+        _getContext = getContext;
         _onReply = onReply;
         var options = DialogueApiStore.Load();
         EnabledBox.IsChecked = options.Enabled;
@@ -36,7 +41,65 @@ public partial class ConversationWindow : Window
         AutoRepliesBox.IsChecked = options.AutomaticReplies;
         PersonaBox.Text = PersonaStore.Load();
         ResponseBox.Text = "胖宝宝：我在呢。输入文字后点发送；没填 API 时，桌宠仍会按本地台词说话。";
-        Closed += (_, _) => { _request?.Cancel(); _request?.Dispose(); _client.Dispose(); };
+        _idleTimer.Tick += (_, _) =>
+        {
+            var idleLimit = Sections.SelectedItem == ChatTab ? TimeSpan.FromMinutes(2) : TimeSpan.FromMinutes(5);
+            if (!IsCollapsed && _request is null && DateTimeOffset.Now - _lastActivity >= idleLimit) Collapse();
+        };
+        _idleTimer.Start();
+        Closed += (_, _) => { _idleTimer.Stop(); _request?.Cancel(); _client.Dispose(); };
+    }
+
+    public void Expand()
+    {
+        IsCollapsed = false;
+        ChatIcon.Visibility = Visibility.Collapsed;
+        ChatPanel.Visibility = Visibility.Visible;
+        ResizeForSection();
+        Touch();
+        Dispatcher.BeginInvoke(new Action(() => InputBox.Focus()), DispatcherPriority.Loaded);
+    }
+
+    public void Collapse()
+    {
+        IsCollapsed = true;
+        ChatPanel.Visibility = Visibility.Collapsed;
+        ChatIcon.Visibility = Visibility.Visible;
+        Width = 48;
+        Height = 48;
+        LayoutModeChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void CancelRequest() => _request?.Cancel();
+
+    private void ResizeForSection()
+    {
+        if (IsCollapsed) return;
+        Width = 430;
+        Height = Sections.SelectedItem == ChatTab ? 320 : 420;
+        LayoutModeChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void Touch() => _lastActivity = DateTimeOffset.Now;
+
+    private void Expand_Click(object sender, RoutedEventArgs e) => Expand();
+    private void Collapse_Click(object sender, RoutedEventArgs e) => Collapse();
+    private void Activity_MouseMove(object sender, MouseEventArgs e) => Touch();
+    private void Activity_KeyDown(object sender, KeyEventArgs e) => Touch();
+
+    private void Sections_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.Source != Sections) return;
+        Touch();
+        ResizeForSection();
+    }
+
+    private async void InputBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.Control) return;
+        e.Handled = true;
+        if (_request is not null) return;
+        if (SaveCurrent(includePersona: true)) await AskAsync(InputBox.Text, isTest: false);
     }
 
     private DialogueApiOptions ReadOptions()
@@ -118,6 +181,7 @@ public partial class ConversationWindow : Window
         }
         try
         {
+            var context = _getContext();
             var key = DialogueApiStore.LoadKey();
             if (key is null) throw new InvalidOperationException("请在 API 设置里填写并保存密钥。");
             _request = new CancellationTokenSource();
@@ -127,8 +191,8 @@ public partial class ConversationWindow : Window
             AppendTranscript("胖宝宝：正在想……");
             DialogueUsageStore.RecordManual(isTest, DateTimeOffset.Now);
             var reply = await new DialogueService(_client).SendAsync(options, key, PersonaStore.Load(), text,
-                isTest ? "connection-test" : "manual-chat", _actionId, _affection, _request.Token,
-                isTest ? null : _history, _installedActions);
+                isTest ? "connection-test" : "manual-chat", context.ActionId, context.Affection, _request.Token,
+                isTest ? null : _history, context.InstalledActions);
             if (revision != _configurationRevision || _request.IsCancellationRequested)
             {
                 ClearThinking();
@@ -184,5 +248,4 @@ public partial class ConversationWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => _request?.Cancel();
 
-    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }
