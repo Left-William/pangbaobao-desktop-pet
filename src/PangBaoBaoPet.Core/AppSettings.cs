@@ -38,6 +38,7 @@ public sealed class AppSettings
     public bool Topmost { get; set; } = true;
     public bool AutoRoutine { get; set; } = true;
     public string ActionId { get; set; } = "stretch";
+    public string SkinId { get; set; } = "pajamas";
     public double? Left { get; set; }
     public double? Top { get; set; }
 
@@ -69,6 +70,7 @@ public sealed class AppSettings
             Context = line.Context is "click" or "drag" or "kiss" or "roll" ? line.Context : "ambient"
         }).Take(200).ToList();
         ActionId ??= "stretch";
+        if (SkinId is not ("pajamas" or "black-tee")) SkinId = "pajamas";
         if (Left is double left && !double.IsFinite(left)) Left = null;
         if (Top is double top && !double.IsFinite(top)) Top = null;
     }

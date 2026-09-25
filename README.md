@@ -10,8 +10,8 @@
   <a href="https://github.com/Left-William/pangbaobao-desktop-pet/releases/tag/v0.3.0-preview.1">⬇️ 下载桌宠</a>
   · <a href="#先看节目再请上桌">🎬 看动作</a>
   · <a href="#三分钟上桌">🚀 安装</a>
-  · <a href="工程验证记录.md">🔬 看验证记录</a>
-  · <a href="docs/工程规划.md">📐 看工程规划</a>
+  · <a href="docs/0.5-实施记录.md">🔬 看 0.5 进度</a>
+  · <a href="docs/0.5-工程规划.md">📐 看 0.5 规划</a>
 </p>
 
 > **桌面健康提示**：他做操的目的暂时不明，但你确实已经坐太久了。
@@ -20,7 +20,13 @@
 
 这是一个**独立 Windows 桌面程序**。人物以透明窗口悬浮在桌面上，可以拖动、缩放、置顶；默认循环播放六节广播体操。右键可以固定某一节，也能让他暂停。系统托盘里有设置和退出入口。
 
-人物参考了用户提供的舍友照片，保留眼镜、发型、脸部特征和深色印花睡衣。当前源码是 **0.3.0-preview.1**：默认广播操约 21 秒一轮，伸展、转体、踮脚改用筛选过的过渡帧与停顿；新增漫画对白、好感度、摸头娇羞、飞吻和打滚。部分旧动作仍是 5～6 张原始姿势，视觉节奏还需在不同电脑上复核。
+人物参考了用户提供的舍友照片。仓库公开下载仍是 **0.3.0-preview.1**；当前工作区正在制作 **0.5.0-preview.1**，新增睡衣／黑 T 恤切换、可自行配置的兼容对话 API 和项目化构建入口。0.5 的人物母版与高强度动作尚在视觉验收中，具体差距见 [实施记录](docs/0.5-实施记录.md)。
+
+### 0.5 开发预览里的服装和对话
+
+右键 **「服装」** 可在印花睡衣与黑 T 恤之间切换。当前若在播一次性动作，切换会等动作结束后生效。黑 T 恤下提供站立、跳高与跳远的关键姿势预览；睡衣仍以广播体操为主。两套服装的全部动作尚未达到相同覆盖度和清晰度，因此 0.5 还不是正式发布。
+
+右键 **「和胖宝宝说话…」** 可设置兼容 chat completions 的完整 HTTPS 端点、模型和密钥，也可编辑独立人设。密钥使用 Windows 当前用户 DPAPI 加密保存在本机；未配置外部服务时使用本地台词。默认只在你手动发送或测试连接时调用外部服务；你也可以单独开启有次数上限的自动气泡回复。程序不会上传参考照片或屏幕内容。接口对不同供应商的兼容范围须用你填写的真实 API 再测。
 
 ### 他的日程安排
 
@@ -80,24 +86,28 @@
 项目使用 .NET 8 WPF / WinForms 实现透明桌面窗口、托盘和设置界面。运行时没有第三方 NuGet 依赖，也不运行 RIFE；RIFE 只在离线制作素材时使用。
 
 ```text
-PangBaoBaoPet/                  桌面程序、动作播放器、气泡设置与素材
-PangBaoBaoPet.SmokeTests/       气泡、好感度和存档恢复的轻量测试
-source-assets/                  旧版原帧、伸展关键姿势和新特殊动作源图
-repair_matte.py                 清理白边和紫色抠图残边
-build_smooth_stretch.py         组装伸展补帧循环
-trial_small_action_rife.py      转体、踮脚的离线补帧脚本
-install_refined_assets.py       安装清边和补帧后的动作素材
-工程验证记录.md                  本机验证证据和未完成项
+PangBaoBaoPet.sln              四项目解决方案
+src/PangBaoBaoPet.Desktop/      WPF 窗口、动画播放器和随包素材
+src/PangBaoBaoPet.Core/         设置、气泡调度与好感度规则
+src/PangBaoBaoPet.Infrastructure/ 外部对话适配与人设存储
+tests/PangBaoBaoPet.Tests/      离线规则与模拟 API 契约测试
+config/defaults/persona.md     可恢复的人设默认模板
+art/source/v0.3/               旧版原帧与生成源图，仅供追溯
+tools/                         构建、测试、打包与素材检查入口
+archive/v0.3-tools/            旧版离线制作脚本
+docs/0.5-实施记录.md            当前验证结果与未完成项
 ```
 
 安装 .NET 8 SDK 后，在仓库根目录执行：
 
 ```powershell
-dotnet run --project PangBaoBaoPet.SmokeTests/PangBaoBaoPet.SmokeTests.csproj -c Release
-dotnet publish PangBaoBaoPet/PangBaoBaoPet.csproj -c Release --self-contained false -o dist/PangBaoBaoPet-0.3.0-preview.1
+.\tools\build.ps1
+.\tools\test.ps1
+python .\tools\assets\validate_assets.py
+.\tools\package.ps1
 ```
 
-`prepare_assets.py` 是早期从本机预览文件提取素材的脚本；仓库内已经附有当前运行所需的全部动作帧，正常构建**无需执行**它。0.3 的实现与验证见 [实施记录](docs/0.3-实施记录.md)。
+旧版离线制作脚本已归档，正常构建**无需执行**它们。`package.ps1` 生成依赖 .NET 8 Desktop Runtime 的本地预览 ZIP；带 `-SelfContained` 可制作自包含包，带 `-ReleaseCandidate` 会执行正式素材门槛与测试。0.5 的发布检查目前会因旧帧清晰度与双服装动作覆盖不足而失败，不能把普通打包成功当成正式视觉验收。
 
 ## 目前的真实进度
 

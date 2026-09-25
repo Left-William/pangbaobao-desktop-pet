@@ -213,5 +213,53 @@
     "displayHeight": 361,
     "includeInRoutine": false,
     "oneShot": true
+  },
+  {
+    "id": "idle",
+    "name": "站立（睡衣）",
+    "skinId": "pajamas",
+    "category": "idle",
+    "assetDirectory": "pajamas_idle",
+    "frames": 1,
+    "durationsMs": [1000],
+    "displayHeight": 361,
+    "includeInRoutine": false
+  },
+  {
+    "id": "idle",
+    "name": "站立（黑 T 恤）",
+    "skinId": "black-tee",
+    "category": "idle",
+    "assetDirectory": "black_idle",
+    "frames": 1,
+    "durationsMs": [1000],
+    "displayHeight": 361,
+    "includeInRoutine": true
+  },
+  {
+    "id": "high_jump",
+    "name": "原地跳高（关键姿势预览）",
+    "skinId": "black-tee",
+    "category": "exercise",
+    "assetDirectory": "black_high_jump",
+    "frames": 5,
+    "durationsMs": [400, 500, 600, 500, 500],
+    "frameOffsets": [[0, 0], [0, 0], [0, -75], [0, 0], [0, 0]],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
+  },
+  {
+    "id": "long_jump",
+    "name": "立定跳远（关键姿势预览）",
+    "skinId": "black-tee",
+    "category": "exercise",
+    "assetDirectory": "black_long_jump",
+    "frames": 5,
+    "durationsMs": [400, 500, 600, 500, 500],
+    "frameOffsets": [[0, 0], [0, 0], [45, -45], [85, 0], [85, 0]],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
   }
 ]

@@ -76,6 +76,7 @@ public partial class SettingsWindow : Window
             Topmost = _source.Topmost,
             AutoRoutine = _source.AutoRoutine,
             ActionId = _source.ActionId,
+            SkinId = _source.SkinId,
             Left = _source.Left,
             Top = _source.Top
         };

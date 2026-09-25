@@ -2,7 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -22,6 +28,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _frameTimer = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly DispatcherTimer _bubbleTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private readonly Stopwatch _actionWatch = new();
+    private readonly FrameCache _frameCache = new();
+    private readonly HttpClient _autoDialogueClient = new();
     private readonly Random _random = new();
     private readonly Forms.NotifyIcon _tray;
     private readonly BubbleScheduler _scheduler;
@@ -32,7 +40,10 @@ public partial class MainWindow : Window
     private AnimationAction? _resumeAction;
     private MenuItem? _affectionMenu;
     private string? _firstRewardPlaying;
+    private string? _pendingSkinId;
+    private CancellationTokenSource? _autoDialogueRequest;
     private bool _advanceRoutineAfterSpecial;
+    private bool _pendingShy;
     private bool _paused;
     private bool _pointerDown;
     private Point _pressPoint;
@@ -50,8 +61,9 @@ public partial class MainWindow : Window
         _settings = SettingsStore.Load(out var settingsWarning);
         _affection = new AffectionService(PetStateStore.Load(out var stateWarning));
         _actions = AnimationCatalog.Load().ToList();
-        _action = _actions.FirstOrDefault(a => a.Id == _settings.ActionId && !a.OneShot)
-            ?? _actions.First(a => a.IncludeInRoutine);
+        _action = _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == _settings.ActionId && !a.OneShot)
+            ?? _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == "idle")
+            ?? _actions.First(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine);
         _scheduler = new BubbleScheduler(DateTimeOffset.Now, _settings);
         SetFrame(0);
         BuildContextMenu();
@@ -74,6 +86,7 @@ public partial class MainWindow : Window
             if (!IsVisible)
             {
                 _actionWatch.Stop();
+                _autoDialogueRequest?.Cancel();
                 if (SpeechBubble.Visibility == Visibility.Visible) HideBubble();
             }
             else if (!_paused)
@@ -110,7 +123,7 @@ public partial class MainWindow : Window
         var routine = new MenuItem { Header = "整套广播体操", IsCheckable = true, IsChecked = _settings.AutoRoutine };
         routine.Click += (_, _) => { _settings.AutoRoutine = routine.IsChecked; SaveSettings(); };
         menu.Items.Add(routine);
-        foreach (var action in _actions.Where(a => !a.OneShot))
+        foreach (var action in _actions.Where(a => a.SkinId == _settings.SkinId && !a.OneShot && a.Category == "routine"))
         {
             var item = new MenuItem { Header = $"单节循环：{action.Name}" };
             item.Click += (_, _) =>
@@ -124,6 +137,26 @@ public partial class MainWindow : Window
             };
             menu.Items.Add(item);
         }
+        var exercises = new MenuItem { Header = "运动动作" };
+        foreach (var action in _actions.Where(a => a.SkinId == _settings.SkinId && a.Category == "exercise"))
+        {
+            var item = new MenuItem { Header = action.Name };
+            item.Click += (_, _) => StartSpecial(action.Id, firstReward: false, advanceRoutine: false);
+            exercises.Items.Add(item);
+        }
+        if (exercises.Items.Count > 0) menu.Items.Add(exercises);
+        var skins = new MenuItem { Header = "服装" };
+        foreach (var (id, label) in new[] { ("pajamas", "印花睡衣"), ("black-tee", "黑色 T 恤") })
+        {
+            var item = new MenuItem { Header = label, IsCheckable = true, IsChecked = _settings.SkinId == id };
+            item.Click += (_, _) =>
+            {
+                if (_action.OneShot) _pendingSkinId = id;
+                else ApplySkin(id);
+            };
+            skins.Items.Add(item);
+        }
+        menu.Items.Add(skins);
         menu.Items.Add(new Separator());
         _affectionMenu = new MenuItem { IsEnabled = false };
         UpdateAffectionMenu();
@@ -131,12 +164,13 @@ public partial class MainWindow : Window
         var previews = new MenuItem { Header = "预览特殊动作" };
         foreach (var id in new[] { "shy", "kiss", "roll" })
         {
-            var action = _actions.First(a => a.Id == id);
+            var action = _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == id);
+            if (action is null) continue;
             var item = new MenuItem { Header = action.Name };
             item.Click += (_, _) => StartSpecial(id, firstReward: false, advanceRoutine: false);
             previews.Items.Add(item);
         }
-        menu.Items.Add(previews);
+        if (previews.Items.Count > 0) menu.Items.Add(previews);
         var reset = new MenuItem { Header = "重置好感度…" };
         reset.Click += (_, _) =>
         {
@@ -189,6 +223,9 @@ public partial class MainWindow : Window
         var preview = new MenuItem { Header = "预览一条气泡" };
         preview.Click += (_, _) => PreviewBubble();
         menu.Items.Add(preview);
+        var chat = new MenuItem { Header = "和胖宝宝说话…" };
+        chat.Click += (_, _) => OpenConversation();
+        menu.Items.Add(chat);
         var settings = new MenuItem { Header = "设置对话与互动…" };
         settings.Click += (_, _) => OpenSettings();
         menu.Items.Add(settings);
@@ -215,19 +252,39 @@ public partial class MainWindow : Window
         SetFrame(0);
     }
 
+    private void ApplySkin(string skinId)
+    {
+        var next = _actions.FirstOrDefault(a => a.SkinId == skinId && a.Id == _action.Id && !a.OneShot)
+            ?? _actions.FirstOrDefault(a => a.SkinId == skinId && a.Id == "idle")
+            ?? _actions.First(a => a.SkinId == skinId && a.IncludeInRoutine);
+        _settings.SkinId = skinId;
+        _settings.ActionId = next.Id;
+        _resumeAction = null;
+        _pendingSkinId = null;
+        SetAction(next, false);
+        SaveSettings();
+        BuildContextMenu();
+    }
+
     private void SetFrame(int index)
     {
         _frameIndex = index;
-        PetImage.Source = _action.Frames[index];
+        var frame = _frameCache.Get(_action.FramePaths[index]);
+        PetImage.Source = frame;
         var height = _action.FrameDisplayHeights[index];
         PetImage.Height = height;
-        PetImage.Width = height * _action.Frames[index].PixelWidth / _action.Frames[index].PixelHeight;
+        PetImage.Width = height * frame.PixelWidth / frame.PixelHeight;
+        var offset = _action.FrameOffsets[index];
+        PetImage.RenderTransform = new TranslateTransform(offset.X, offset.Y);
+        for (var next = 1; next <= 2 && next < _action.FramePaths.Count; next++)
+            _frameCache.Prefetch(_action.FramePaths[(index + next) % _action.FramePaths.Count]);
         if (SpeechBubble.Visibility == Visibility.Visible) Dispatcher.BeginInvoke(new Action(PlaceBubble), DispatcherPriority.Loaded);
     }
 
     private AnimationAction NextRoutine(AnimationAction current)
     {
-        var routine = _actions.Where(a => a.IncludeInRoutine && !a.OneShot).ToArray();
+        var routine = _actions.Where(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine && !a.OneShot).ToArray();
+        if (routine.Length == 0) return current;
         var index = Array.IndexOf(routine, current);
         return routine[(index + 1) % routine.Length];
     }
@@ -271,9 +328,14 @@ public partial class MainWindow : Window
     private bool StartSpecial(string id, bool firstReward, bool advanceRoutine)
     {
         if (_paused || !IsVisible) return false;
-        var special = _actions.FirstOrDefault(a => a.Id == id && a.OneShot);
+        var special = _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == id && a.OneShot);
         if (special is null) return false;
         if (_action.OneShot) return false;
+        if (id == "long_jump" && Left + Width + 85 * _settings.Scale > GetCurrentWorkArea().Right)
+        {
+            MessageBox.Show(this, "右侧空间不够跳远，请先把桌宠移到屏幕左侧。", "空间不足");
+            return false;
+        }
         _resumeAction ??= _action;
         _firstRewardPlaying = firstReward ? id : null;
         _advanceRoutineAfterSpecial = advanceRoutine;
@@ -290,6 +352,14 @@ public partial class MainWindow : Window
     private void FinishSpecial()
     {
         var finished = _action.Id;
+        if (finished == "long_jump")
+        {
+            Left += 85 * _settings.Scale;
+            ClampToWorkArea();
+            _settings.Left = Left;
+            _settings.Top = Top;
+            SaveSettings();
+        }
         if (_firstRewardPlaying is { } reward)
         {
             _affection.Complete(reward);
@@ -301,7 +371,13 @@ public partial class MainWindow : Window
         _resumeAction = null;
         _advanceRoutineAfterSpecial = false;
         SetAction(resume, false);
+        if (_pendingSkinId is { } pendingSkin) ApplySkin(pendingSkin);
         if (finished is "kiss" or "roll") MaybeShowContext(finished, forced: true);
+        if (_pendingShy)
+        {
+            _pendingShy = false;
+            StartSpecial("shy", firstReward: false, advanceRoutine: false);
+        }
     }
 
     private void AdvanceBubble()
@@ -319,7 +395,51 @@ public partial class MainWindow : Window
             else HideBubble();
         }
         var text = _scheduler.Tick(now, _settings, _random, IsVisible && !_paused && !_action.OneShot);
-        if (text is not null) ShowBubble(text, 1);
+        if (text is not null && ShowBubble(text, 1))
+            _ = TryAutomaticReplyAsync(SpeechText.Text);
+    }
+
+    private async Task TryAutomaticReplyAsync(string firstLocalPage)
+    {
+        if (_autoDialogueRequest is not null || !IsVisible || _paused) return;
+        CancellationTokenSource? request = null;
+        try
+        {
+            var options = DialogueApiStore.Load();
+            if (!options.Enabled || !options.AutomaticReplies) return;
+            var key = DialogueApiStore.LoadKey();
+            if (string.IsNullOrWhiteSpace(key) || !DialogueUsageStore.TryReserveAutomatic(options, DateTimeOffset.Now)) return;
+            var persona = PersonaStore.Load();
+            var actionId = _action.Id;
+            request = new CancellationTokenSource();
+            _autoDialogueRequest = request;
+            var reply = await new DialogueService(_autoDialogueClient).SendAsync(options, key, persona,
+                "请根据当前桌宠状态说一句简短的日常台词。", "ambient", actionId,
+                _affection.State.Affection, request.Token, null,
+                _actions.Where(a => a.SkinId == _settings.SkinId && a.OneShot).Select(a => a.Id).ToArray());
+            var current = DialogueApiStore.Load();
+            if (request.IsCancellationRequested || !IsVisible || _paused ||
+                !current.Enabled || !current.AutomaticReplies ||
+                current.EndpointUrl != options.EndpointUrl || current.Model != options.Model ||
+                PersonaStore.Load() != persona || SpeechBubble.Visibility != Visibility.Visible ||
+                _bubblePriority != 1 || SpeechText.Text != firstLocalPage) return;
+            ShowBubble(reply.Text, 1);
+        }
+        catch (DialogueRateLimitException ex)
+        {
+            try { DialogueUsageStore.SetAutomaticCooldown(ex.RetryAt); }
+            catch (IOException) { }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or
+            JsonException or InvalidOperationException or ArgumentException or CryptographicException or OperationCanceledException)
+        {
+            // The already visible local line remains the fallback.
+        }
+        finally
+        {
+            if (ReferenceEquals(_autoDialogueRequest, request)) _autoDialogueRequest = null;
+            request?.Dispose();
+        }
     }
 
     private void MaybeShowContext(string context, bool forced = false)
@@ -460,7 +580,18 @@ public partial class MainWindow : Window
                 UpdateAffectionMenu();
             }
         }
-        if (_action.OneShot) return;
+        if (_action.OneShot)
+        {
+            if (kind == PetInteraction.Click && headClick &&
+                now - _lastHeadReactionAt >= TimeSpan.FromMilliseconds(1200))
+            {
+                _lastHeadReactionAt = now;
+                SpawnHeart(points);
+                if (_action.Id != "shy") _pendingShy = true;
+            }
+            else if (points > 0) SpawnHeart(points);
+            return;
+        }
         if (kind == PetInteraction.Click && headClick &&
             now - _lastHeadReactionAt >= TimeSpan.FromMilliseconds(1200))
         {
@@ -521,6 +652,7 @@ public partial class MainWindow : Window
             Math.Abs(current.Y - _pressPoint.Y) < SystemParameters.MinimumVerticalDragDistance) return;
         _pointerDown = false;
         PetImage.ReleaseMouseCapture();
+        if (_action.OneShot) InterruptSpecialForDrag();
         var oldLeft = Left;
         var oldTop = Top;
         var wasRunning = _actionWatch.IsRunning;
@@ -535,6 +667,19 @@ public partial class MainWindow : Window
         SaveSettings();
         RegisterInteraction(PetInteraction.Drag, headClick: false);
         if (SpeechBubble.Visibility == Visibility.Visible) PlaceBubble();
+    }
+
+    private void InterruptSpecialForDrag()
+    {
+        if (!_action.OneShot) return;
+        // A queued first-time reward remains pending until an action has actually finished.
+        _firstRewardPlaying = null;
+        var resume = _resumeAction ?? _actions.First(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine);
+        _resumeAction = null;
+        _advanceRoutineAfterSpecial = false;
+        _pendingShy = false;
+        SetAction(resume, false);
+        if (_pendingSkinId is { } skin) ApplySkin(skin);
     }
 
     private void PetImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -572,12 +717,24 @@ public partial class MainWindow : Window
         SaveSettings();
     }
 
+    private void OpenConversation()
+    {
+        var installed = _actions.Where(a => a.SkinId == _settings.SkinId && a.OneShot).Select(a => a.Id).ToArray();
+        var dialog = new ConversationWindow(_action.Id, _affection.State.Affection, installed, reply =>
+        {
+            ShowBubble(reply.Text, 4);
+            if (reply.Action != "none") StartSpecial(reply.Action, firstReward: false, advanceRoutine: false);
+        }) { Owner = this };
+        dialog.ShowDialog();
+    }
+
     private void TogglePause()
     {
         _paused = !_paused;
         if (_paused)
         {
             _actionWatch.Stop();
+            _autoDialogueRequest?.Cancel();
             if (SpeechBubble.Visibility == Visibility.Visible) HideBubble();
         }
         else
@@ -659,6 +816,8 @@ public partial class MainWindow : Window
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         _frameTimer.Stop();
         _bubbleTimer.Stop();
+        _autoDialogueRequest?.Cancel();
+        _autoDialogueClient.Dispose();
         SavePetState();
         _tray.Visible = false;
         _tray.Dispose();

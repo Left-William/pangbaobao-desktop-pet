@@ -1,6 +1,6 @@
 # 0.3 特殊动作源图
 
-这些 PNG 使用内置 `image_gen` 工具从仓库中的真人抠图姿势派生。参照图为 `PangBaoBaoPet/Assets/stretch_classic/frame_001.png`；第二张飞吻图和仰卧图以上一个已生成姿势为参照。源图保留在此目录；运行帧复制到 `PangBaoBaoPet/Assets/shy`、`kiss`、`roll` 后，使用仓库原有的 `repair_matte.py` 轻度收边。没有在运行时调用图像生成服务。
+这些 PNG 使用内置 `image_gen` 工具从仓库中的真人抠图姿势派生。原参照图现位于 `src/PangBaoBaoPet.Desktop/Assets/stretch_classic/frame_001.png`；第二张飞吻图和仰卧图以上一个已生成姿势为参照。源图保留在此目录；运行帧现位于 `src/PangBaoBaoPet.Desktop/Assets/shy`、`kiss`、`roll`。历史上使用的 `repair_matte.py` 已归档到 `archive/v0.3-tools/`，没有在运行时调用图像生成服务。
 
 | 源图 | 运行帧 | 作用 |
 | --- | --- | --- |

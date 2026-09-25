@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Windows.Media.Imaging;
 
 namespace PangBaoBaoPet;
 
@@ -11,9 +10,12 @@ public sealed class AnimationAction
 {
     public string Id { get; init; } = "";
     public string Name { get; init; } = "";
-    public IReadOnlyList<BitmapImage> Frames { get; init; } = Array.Empty<BitmapImage>();
+    public string SkinId { get; init; } = "pajamas";
+    public string Category { get; init; } = "routine";
+    public IReadOnlyList<string> FramePaths { get; init; } = Array.Empty<string>();
     public IReadOnlyList<double> FrameEnds { get; init; } = Array.Empty<double>();
     public IReadOnlyList<double> FrameDisplayHeights { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<(double X, double Y)> FrameOffsets { get; init; } = Array.Empty<(double X, double Y)>();
     public double DisplayHeight { get; init; } = 362;
     public bool IncludeInRoutine { get; init; } = true;
     public bool OneShot { get; init; }
@@ -35,11 +37,14 @@ public static class AnimationCatalog
     {
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
+        public string SkinId { get; set; } = "pajamas";
+        public string Category { get; set; } = "routine";
         public string? AssetDirectory { get; set; }
         public int? Frames { get; set; }
         public int? Fps { get; set; }
         public int[]? DurationsMs { get; set; }
         public double[]? FrameDisplayHeights { get; set; }
+        public double[][]? FrameOffsets { get; set; }
         public double DisplayHeight { get; set; } = 362;
         public bool IncludeInRoutine { get; set; } = true;
         public bool OneShot { get; set; }
@@ -71,32 +76,30 @@ public static class AnimationCatalog
             if (spec.FrameDisplayHeights is { } heights &&
                 (heights.Length != paths.Length || heights.Any(x => !double.IsFinite(x) || x <= 0)))
                 throw new InvalidDataException($"Invalid frame heights: {spec.Id}");
+            if (spec.FrameOffsets is { } offsets &&
+                (offsets.Length != paths.Length || offsets.Any(x => x is not { Length: 2 } ||
+                    x.Any(value => !double.IsFinite(value) || Math.Abs(value) > 300))))
+                throw new InvalidDataException($"Invalid frame offsets: {spec.Id}");
             if (!double.IsFinite(spec.DisplayHeight) || spec.DisplayHeight <= 0 ||
                 !double.IsFinite(spec.HeadX) || spec.HeadX is < 0 or > 1 ||
                 !double.IsFinite(spec.HeadY) || spec.HeadY is < 0 or > 1)
                 throw new InvalidDataException($"Invalid action geometry: {spec.Id}");
-            var frames = paths.Select(path =>
-            {
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.UriSource = new Uri(path, UriKind.Absolute);
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }).ToArray();
             double total = 0;
             var ends = new List<double>();
-            for (var i = 0; i < frames.Length; i++)
+            for (var i = 0; i < paths.Length; i++)
             {
                 total += spec.DurationsMs is { Length: > 0 }
                     ? spec.DurationsMs[i] / 1000.0
                     : 1.0 / Math.Max(1, spec.Fps ?? 8);
                 ends.Add(total);
             }
-            result.Add(new AnimationAction { Id = spec.Id, Name = spec.Name, Frames = frames,
+            result.Add(new AnimationAction { Id = spec.Id, Name = spec.Name,
+                SkinId = spec.SkinId, Category = spec.Category, FramePaths = paths,
                 FrameEnds = ends, DisplayHeight = spec.DisplayHeight,
-                FrameDisplayHeights = spec.FrameDisplayHeights ?? Enumerable.Repeat(spec.DisplayHeight, frames.Length).ToArray(),
+                FrameDisplayHeights = spec.FrameDisplayHeights ?? Enumerable.Repeat(spec.DisplayHeight, paths.Length).ToArray(),
+                FrameOffsets = spec.FrameOffsets is { } frameOffsets
+                    ? frameOffsets.Select(x => (x[0], x[1])).ToArray()
+                    : Enumerable.Repeat((0.0, 0.0), paths.Length).ToArray(),
                 IncludeInRoutine = spec.IncludeInRoutine, OneShot = spec.OneShot,
                 HeadX = spec.HeadX, HeadY = spec.HeadY });
         }

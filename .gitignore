@@ -4,6 +4,7 @@
 dist/
 .vs/
 .dotnet/
+.templateengine/
 *.user
 *.suo
 
@@ -13,6 +14,8 @@ __pycache__/
 .venv/
 venv/
 work/
+art/references/private/
+art/candidates/
 
 # Local-only settings and OS noise
 settings.json

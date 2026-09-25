@@ -7,11 +7,14 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets/pet.ico</ApplicationIcon>
-    <Version>0.3.0-preview.1</Version>
+    <Version>0.5.0-preview.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../config/defaults/persona.md" Link="Defaults/persona.md" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="../PangBaoBaoPet.Core/PangBaoBaoPet.Core.csproj" />
+    <ProjectReference Include="../PangBaoBaoPet.Infrastructure/PangBaoBaoPet.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
