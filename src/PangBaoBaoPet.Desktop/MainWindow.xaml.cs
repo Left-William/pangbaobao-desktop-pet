@@ -39,6 +39,7 @@ public partial class MainWindow : Window
     private AppSettings _settings;
     private AnimationAction _action;
     private AnimationAction? _resumeAction;
+    private StageWindow? _positionBeforeWideAction;
     private MenuItem? _affectionMenu;
     private string? _firstRewardPlaying;
     private string? _pendingSkinId;
@@ -204,6 +205,13 @@ public partial class MainWindow : Window
                 _resumeAction = null;
                 _advanceRoutineAfterSpecial = false;
                 SetAction(resume, false);
+                if (_positionBeforeWideAction is { } original)
+                {
+                    Left = original.Left;
+                    Top = original.Top;
+                    ClampToWorkArea();
+                    _positionBeforeWideAction = null;
+                }
             }
             SavePetState();
             UpdateAffectionMenu();
@@ -255,6 +263,7 @@ public partial class MainWindow : Window
 
     private void SetAction(AnimationAction action, bool persistSelection)
     {
+        ApplyActionStage(action);
         _action = action;
         if (persistSelection) _settings.ActionId = action.Id;
         _actionWatch.Restart();
@@ -348,6 +357,16 @@ public partial class MainWindow : Window
             MessageBox.Show(this, "右侧空间不够跳远，请先把桌宠移到屏幕左侧。", "空间不足");
             return false;
         }
+        var workArea = GetCurrentWorkArea();
+        if (special.StageWidth * _settings.Scale > workArea.Width ||
+            special.StageHeight * _settings.Scale > workArea.Height)
+        {
+            MessageBox.Show(this, "这个动作需要更宽的桌面空间，请调小桌宠。", "空间不足");
+            return false;
+        }
+        _positionBeforeWideAction = special.StageWidth != _action.StageWidth ||
+            special.StageHeight != _action.StageHeight
+            ? new StageWindow(Left, Top, Width, Height) : null;
         _resumeAction ??= _action;
         _firstRewardPlaying = firstReward ? id : null;
         _advanceRoutineAfterSpecial = advanceRoutine;
@@ -383,6 +402,13 @@ public partial class MainWindow : Window
         _resumeAction = null;
         _advanceRoutineAfterSpecial = false;
         SetAction(resume, false);
+        if (_positionBeforeWideAction is { } original)
+        {
+            Left = original.Left;
+            Top = original.Top;
+            ClampToWorkArea();
+            _positionBeforeWideAction = null;
+        }
         if (_pendingSkinId is { } pendingSkin) ApplySkin(pendingSkin);
         if (finished is "kiss" or "roll") MaybeShowContext(finished, forced: true);
         if (_pendingShy)
@@ -700,6 +726,7 @@ public partial class MainWindow : Window
         _resumeAction = null;
         _advanceRoutineAfterSpecial = false;
         _pendingShy = false;
+        _positionBeforeWideAction = null;
         SetAction(resume, false);
         if (_pendingSkinId is { } skin) ApplySkin(skin);
     }
@@ -821,12 +848,36 @@ public partial class MainWindow : Window
 
     private void ApplyScale()
     {
+        var resized = new StageWindow(Left, Top, Width, Height).ResizeKeepingCenterAndGround(
+            _action.StageWidth * _settings.Scale, _action.StageHeight * _settings.Scale);
         Root.LayoutTransform = new ScaleTransform(_settings.Scale, _settings.Scale);
-        Width = 430 * _settings.Scale;
-        Height = 490 * _settings.Scale;
+        Root.Width = _action.StageWidth;
+        Root.Height = _action.StageHeight;
+        Width = resized.Width;
+        Height = resized.Height;
+        if (IsLoaded) { Left = resized.Left; Top = resized.Top; }
         ClampToWorkArea();
         PlaceChatDock();
         if (SpeechBubble.Visibility == Visibility.Visible) PlaceBubble();
+    }
+
+    private void ApplyActionStage(AnimationAction action)
+    {
+        if (Root.Width == action.StageWidth && Root.Height == action.StageHeight) return;
+        var resized = new StageWindow(Left, Top, Width, Height).ResizeKeepingCenterAndGround(
+            action.StageWidth * _settings.Scale, action.StageHeight * _settings.Scale);
+        if (IsLoaded)
+        {
+            var workArea = GetCurrentWorkArea();
+            resized = resized.MoveInto(new StageWindow(workArea.Left, workArea.Top, workArea.Width, workArea.Height));
+        }
+        Root.Width = action.StageWidth;
+        Root.Height = action.StageHeight;
+        Width = resized.Width;
+        Height = resized.Height;
+        Left = resized.Left;
+        Top = resized.Top;
+        PlaceChatDock();
     }
 
     private void RestorePosition()

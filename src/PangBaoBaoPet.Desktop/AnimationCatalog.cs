@@ -18,6 +18,8 @@ public sealed class AnimationAction
     public IReadOnlyList<(double X, double Y)> FrameOffsets { get; init; } = Array.Empty<(double X, double Y)>();
     public IReadOnlyList<(double X, double Y)> FrameHeadAnchors { get; init; } = Array.Empty<(double X, double Y)>();
     public IReadOnlyList<(double X, double Y)> FrameMouthAnchors { get; init; } = Array.Empty<(double X, double Y)>();
+    public double StageWidth { get; init; } = 430;
+    public double StageHeight { get; init; } = 490;
     public double DisplayHeight { get; init; } = 362;
     public bool IncludeInRoutine { get; init; } = true;
     public bool OneShot { get; init; }
@@ -49,6 +51,7 @@ public static class AnimationCatalog
         public double[][]? FrameOffsets { get; set; }
         public double[][]? FrameHeadAnchors { get; set; }
         public double[][]? FrameMouthAnchors { get; set; }
+        public double[]? StageDip { get; set; }
         public double DisplayHeight { get; set; } = 362;
         public bool IncludeInRoutine { get; set; } = true;
         public bool OneShot { get; set; }
@@ -87,6 +90,10 @@ public static class AnimationCatalog
             if (spec.FrameHeadAnchors is { } heads && !ValidAnchors(heads, paths.Length) ||
                 spec.FrameMouthAnchors is { } mouths && !ValidAnchors(mouths, paths.Length))
                 throw new InvalidDataException($"Invalid frame anchors: {spec.Id}");
+            if (spec.StageDip is { } stage && (stage.Length != 2 ||
+                !double.IsFinite(stage[0]) || !double.IsFinite(stage[1]) ||
+                stage[0] is < 430 or > 1024 || stage[1] is < 490 or > 768))
+                throw new InvalidDataException($"Invalid stage size: {spec.Id}");
             if (!double.IsFinite(spec.DisplayHeight) || spec.DisplayHeight <= 0 ||
                 !double.IsFinite(spec.HeadX) || spec.HeadX is < 0 or > 1 ||
                 !double.IsFinite(spec.HeadY) || spec.HeadY is < 0 or > 1)
@@ -103,6 +110,8 @@ public static class AnimationCatalog
             result.Add(new AnimationAction { Id = spec.Id, Name = spec.Name,
                 SkinId = spec.SkinId, Category = spec.Category, FramePaths = paths,
                 FrameEnds = ends, DisplayHeight = spec.DisplayHeight,
+                StageWidth = spec.StageDip?[0] ?? 430,
+                StageHeight = spec.StageDip?[1] ?? 490,
                 FrameDisplayHeights = spec.FrameDisplayHeights ?? Enumerable.Repeat(spec.DisplayHeight, paths.Length).ToArray(),
                 FrameOffsets = spec.FrameOffsets is { } frameOffsets
                     ? frameOffsets.Select(x => (x[0], x[1])).ToArray()

@@ -10,6 +10,18 @@ static void Check(bool condition, string message)
     if (!condition) throw new Exception(message);
 }
 
+var narrowStage = new StageWindow(500, 300, 430, 490);
+var wideStage = narrowStage.ResizeKeepingCenterAndGround(768, 576);
+Check(wideStage == new StageWindow(331, 214, 768, 576), "Wide stage moved the character center or ground");
+Check(wideStage.ResizeKeepingCenterAndGround(430, 490) == narrowStage, "Stage did not return to its original placement");
+Check(wideStage.FitsIn(new StageWindow(0, 0, 1920, 1080)), "Wide stage rejected valid work area");
+Check(!new StageWindow(20, 300, 430, 490).ResizeKeepingCenterAndGround(768, 576)
+    .FitsIn(new StageWindow(0, 0, 1920, 1080)), "Wide stage accepted clipped placement");
+var edgeStage = new StageWindow(1450, 500, 430, 490).ResizeKeepingCenterAndGround(768, 576);
+var movedStage = edgeStage.MoveInto(new StageWindow(0, 0, 1920, 1080));
+Check(movedStage.FitsIn(new StageWindow(0, 0, 1920, 1080)), "Wide stage was not moved fully on screen");
+Check(movedStage.Left == 1152 && movedStage.Bottom == 990, "Wide stage changed the ground while fitting the screen");
+
 var start = new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.FromHours(8));
 var settings = new AppSettings
 {

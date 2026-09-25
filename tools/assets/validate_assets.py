@@ -64,6 +64,11 @@ def main() -> int:
         failures.append(f"invalid character master manifest: {error}")
     for action in actions:
         key = (action.get("skinId", "pajamas"), action["id"])
+        stage = action.get("stageDip", [430, 490])
+        if (not isinstance(stage, list) or len(stage) != 2 or
+            any(not isinstance(value, (int, float)) for value in stage) or
+            not 430 <= stage[0] <= 1024 or not 490 <= stage[1] <= 768):
+            failures.append(f"invalid stageDip: {key}")
         if key in seen:
             failures.append(f"duplicate skin/action: {key}")
         seen.add(key)

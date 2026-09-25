@@ -15,7 +15,6 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "src" / "PangBaoBaoPet.Desktop" / "Assets"
-STAGE = (430, 490)
 
 
 def main() -> None:
@@ -31,6 +30,9 @@ def main() -> None:
                    and entry["id"] == args.action), None)
     if action is None:
         parser.error("unknown skin/action")
+    stage = tuple(action.get("stageDip", (430, 490)))
+    if len(stage) != 2 or any(not isinstance(value, int) or value <= 0 for value in stage):
+        parser.error("invalid stageDip")
 
     count = action["frames"]
     heights = action.get("frameDisplayHeights", [action.get("displayHeight", 362)] * count)
@@ -44,7 +46,7 @@ def main() -> None:
                    "black": (15, 15, 15, 255)}
     cols = min(count, 5)
     rows = (count + cols - 1) // cols
-    contact = Image.new("RGBA", (cols * STAGE[0], rows * STAGE[1]), backgrounds[args.background])
+    contact = Image.new("RGBA", (cols * stage[0], rows * stage[1]), backgrounds[args.background])
     draw = ImageDraw.Draw(contact)
     for index, path in enumerate(frames):
         with Image.open(path) as opened:
@@ -53,10 +55,10 @@ def main() -> None:
         width = round(height * frame.width / frame.height)
         rendered = frame.resize((width, height), Image.Resampling.LANCZOS)
         offset_x, offset_y = offsets[index]
-        x = index % cols * STAGE[0] + round((STAGE[0] - width) / 2 + offset_x)
-        y = index // cols * STAGE[1] + round(STAGE[1] - 18 - height + offset_y)
+        x = index % cols * stage[0] + round((stage[0] - width) / 2 + offset_x)
+        y = index // cols * stage[1] + round(stage[1] - 18 - height + offset_y)
         contact.alpha_composite(rendered, (x, y))
-        draw.text((index % cols * STAGE[0] + 8, index // cols * STAGE[1] + 8),
+        draw.text((index % cols * stage[0] + 8, index // cols * stage[1] + 8),
                   f"{index + 1:02d}  {heights[index]} DIP", fill=(255, 235, 40, 255),
                   stroke_width=1, stroke_fill=(0, 0, 0, 255))
 
