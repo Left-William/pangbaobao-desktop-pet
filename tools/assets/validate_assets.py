@@ -21,6 +21,11 @@ MIN_RELEASE_FRAMES = {
     "sidebend": 12, "long_jump": 50, "high_jump": 40, "pull_up": 90,
     "push_up": 90, "street_dance": 160,
 }
+MIN_RELEASE_DISTINCT_FILES = {
+    "stretch": 6, "chest": 6, "bend": 6, "twist": 6, "tiptoe": 6,
+    "sidebend": 6, "long_jump": 35, "high_jump": 30, "pull_up": 55,
+    "push_up": 45, "street_dance": 120,
+}
 
 
 def png_size(path: Path) -> tuple[int, int]:
@@ -72,6 +77,11 @@ def main() -> int:
             continue
         if args.release and key[1] in MIN_RELEASE_FRAMES and len(frames) < MIN_RELEASE_FRAMES[key[1]]:
             failures.append(f"incomplete action: {key}, {len(frames)} < {MIN_RELEASE_FRAMES[key[1]]} frames")
+        if args.release and key[1] in MIN_RELEASE_DISTINCT_FILES:
+            distinct = len({hashlib.sha256(frame.read_bytes()).digest() for frame in frames})
+            minimum = MIN_RELEASE_DISTINCT_FILES[key[1]]
+            if distinct < minimum:
+                failures.append(f"repeated-frame action: {key}, {distinct} < {minimum} distinct PNGs")
         if args.release and "预览" in action.get("name", ""):
             failures.append(f"preview action in release: {key}")
         durations = action.get("durationsMs")
@@ -109,7 +119,7 @@ def main() -> int:
                 failures.append(f"missing release action: {skin}/{action_id}")
     print(f"Validated {len(actions)} action entries. Failures: {len(failures)}. Below 2 px/DIP: {len(low_density)}.")
     for item in failures:
-        label = "RELEASE" if item.startswith(("missing release action", "incomplete action", "preview action")) else "ERROR"
+        label = "RELEASE" if item.startswith(("missing release action", "incomplete action", "preview action", "repeated-frame action")) else "ERROR"
         print(label, item)
     for action_label, count in sorted(low_density_by_action.items()):
         print("DENSITY", action_label, count, "frames")

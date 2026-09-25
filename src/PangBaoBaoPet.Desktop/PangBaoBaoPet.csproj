@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets/**/*" Exclude="Assets/stretch_v03/**/*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../config/defaults/persona.md" Link="Defaults/persona.md" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../PangBaoBaoPet.Core/PangBaoBaoPet.Core.csproj" />
     <ProjectReference Include="../PangBaoBaoPet.Infrastructure/PangBaoBaoPet.Infrastructure.csproj" />
