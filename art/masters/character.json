@@ -1,0 +1,16 @@
+{
+  "characterRevision": "pbb-photo-05-approved",
+  "confirmedAt": "2026-09-25",
+  "confirmation": "用户确认黑 T 恤和睡衣站立母版基本像，可继续制作后续动作；该确认不代表全部运动帧或透明边缘已经验收。",
+  "references": ["R01", "R02", "R03", "R04", "R05"],
+  "skins": {
+    "black-tee": {
+      "master": "pbb-photo-05-candidate.png",
+      "sha256": "2D54EFE35FDA3850BA1182C606F998544382E1517FA5468BBE55CCA20F6D1AA4"
+    },
+    "pajamas": {
+      "master": "pbb-pajamas-05-candidate.png",
+      "sha256": "458DC6EB6592F6E8155E7B8EF1CF7C91F366A4D7C4B992E561BB6E7D67DA83F2"
+    }
+  }
+}

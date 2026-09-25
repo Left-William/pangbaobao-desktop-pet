@@ -16,6 +16,8 @@ public sealed class AnimationAction
     public IReadOnlyList<double> FrameEnds { get; init; } = Array.Empty<double>();
     public IReadOnlyList<double> FrameDisplayHeights { get; init; } = Array.Empty<double>();
     public IReadOnlyList<(double X, double Y)> FrameOffsets { get; init; } = Array.Empty<(double X, double Y)>();
+    public IReadOnlyList<(double X, double Y)> FrameHeadAnchors { get; init; } = Array.Empty<(double X, double Y)>();
+    public IReadOnlyList<(double X, double Y)> FrameMouthAnchors { get; init; } = Array.Empty<(double X, double Y)>();
     public double DisplayHeight { get; init; } = 362;
     public bool IncludeInRoutine { get; init; } = true;
     public bool OneShot { get; init; }
@@ -45,6 +47,8 @@ public static class AnimationCatalog
         public int[]? DurationsMs { get; set; }
         public double[]? FrameDisplayHeights { get; set; }
         public double[][]? FrameOffsets { get; set; }
+        public double[][]? FrameHeadAnchors { get; set; }
+        public double[][]? FrameMouthAnchors { get; set; }
         public double DisplayHeight { get; set; } = 362;
         public bool IncludeInRoutine { get; set; } = true;
         public bool OneShot { get; set; }
@@ -80,6 +84,9 @@ public static class AnimationCatalog
                 (offsets.Length != paths.Length || offsets.Any(x => x is not { Length: 2 } ||
                     x.Any(value => !double.IsFinite(value) || Math.Abs(value) > 300))))
                 throw new InvalidDataException($"Invalid frame offsets: {spec.Id}");
+            if (spec.FrameHeadAnchors is { } heads && !ValidAnchors(heads, paths.Length) ||
+                spec.FrameMouthAnchors is { } mouths && !ValidAnchors(mouths, paths.Length))
+                throw new InvalidDataException($"Invalid frame anchors: {spec.Id}");
             if (!double.IsFinite(spec.DisplayHeight) || spec.DisplayHeight <= 0 ||
                 !double.IsFinite(spec.HeadX) || spec.HeadX is < 0 or > 1 ||
                 !double.IsFinite(spec.HeadY) || spec.HeadY is < 0 or > 1)
@@ -100,9 +107,19 @@ public static class AnimationCatalog
                 FrameOffsets = spec.FrameOffsets is { } frameOffsets
                     ? frameOffsets.Select(x => (x[0], x[1])).ToArray()
                     : Enumerable.Repeat((0.0, 0.0), paths.Length).ToArray(),
+                FrameHeadAnchors = spec.FrameHeadAnchors is { } headAnchors
+                    ? headAnchors.Select(x => (x[0], x[1])).ToArray()
+                    : Enumerable.Repeat((spec.HeadX, spec.HeadY), paths.Length).ToArray(),
+                FrameMouthAnchors = spec.FrameMouthAnchors is { } mouthAnchors
+                    ? mouthAnchors.Select(x => (x[0], x[1])).ToArray()
+                    : Enumerable.Repeat((spec.HeadX, Math.Min(1, spec.HeadY + 0.05)), paths.Length).ToArray(),
                 IncludeInRoutine = spec.IncludeInRoutine, OneShot = spec.OneShot,
                 HeadX = spec.HeadX, HeadY = spec.HeadY });
         }
         return result;
     }
+
+    private static bool ValidAnchors(double[][] anchors, int count) =>
+        anchors.Length == count && anchors.All(anchor => anchor is { Length: 2 } &&
+            anchor.All(value => double.IsFinite(value) && value is >= 0 and <= 1));
 }

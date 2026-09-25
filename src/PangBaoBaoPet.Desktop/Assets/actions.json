@@ -245,6 +245,8 @@
     "frames": 5,
     "durationsMs": [400, 500, 600, 500, 500],
     "frameOffsets": [[0, 0], [0, 0], [0, -75], [0, 0], [0, 0]],
+    "frameHeadAnchors": [[0.50, 0.16], [0.36, 0.20], [0.50, 0.20], [0.36, 0.20], [0.50, 0.16]],
+    "frameMouthAnchors": [[0.50, 0.21], [0.36, 0.26], [0.50, 0.25], [0.36, 0.26], [0.50, 0.21]],
     "displayHeight": 361,
     "includeInRoutine": false,
     "oneShot": true
@@ -258,6 +260,8 @@
     "frames": 5,
     "durationsMs": [400, 500, 600, 500, 500],
     "frameOffsets": [[0, 0], [0, 0], [45, -45], [85, 0], [85, 0]],
+    "frameHeadAnchors": [[0.50, 0.16], [0.36, 0.20], [0.50, 0.20], [0.36, 0.20], [0.50, 0.16]],
+    "frameMouthAnchors": [[0.50, 0.21], [0.36, 0.26], [0.50, 0.25], [0.36, 0.26], [0.50, 0.21]],
     "displayHeight": 361,
     "includeInRoutine": false,
     "oneShot": true

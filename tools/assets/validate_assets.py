@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import struct
@@ -24,9 +25,11 @@ MIN_RELEASE_FRAMES = {
 
 def png_size(path: Path) -> tuple[int, int]:
     with path.open("rb") as image:
-        header = image.read(24)
-    if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n":
+        header = image.read(26)
+    if len(header) < 26 or header[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"not a PNG: {path}")
+    if header[25] != 6:
+        raise ValueError(f"not an RGBA PNG: {path}")
     return struct.unpack(">II", header[16:24])
 
 
@@ -41,6 +44,19 @@ def main() -> int:
     low_density: list[str] = []
     low_density_by_action: dict[str, int] = {}
     seen: set[tuple[str, str]] = set()
+    master_manifest = ROOT / "art" / "masters" / "character.json"
+    try:
+        character = json.loads(master_manifest.read_text(encoding="utf-8"))
+        if character.get("characterRevision") != "pbb-photo-05-approved":
+            failures.append("character master revision is not approved")
+        for skin in ("pajamas", "black-tee"):
+            master = character["skins"][skin]
+            path = master_manifest.parent / master["master"]
+            png_size(path)
+            if hashlib.sha256(path.read_bytes()).hexdigest().upper() != master["sha256"].upper():
+                failures.append(f"character master hash mismatch: {skin}")
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        failures.append(f"invalid character master manifest: {error}")
     for action in actions:
         key = (action.get("skinId", "pajamas"), action["id"])
         if key in seen:
@@ -64,6 +80,14 @@ def main() -> int:
         offsets = action.get("frameOffsets")
         if offsets is not None and (len(offsets) != len(frames) or any(len(x) != 2 for x in offsets)):
             failures.append(f"invalid offsets: {key}")
+        for field in ("frameHeadAnchors", "frameMouthAnchors"):
+            anchors = action.get(field)
+            if anchors is not None and (len(anchors) != len(frames) or any(
+                not isinstance(anchor, list) or len(anchor) != 2 or
+                any(not isinstance(value, (int, float)) or not 0 <= value <= 1 for value in anchor)
+                for anchor in anchors
+            )):
+                failures.append(f"invalid {field}: {key}")
         heights = action.get("frameDisplayHeights", [action.get("displayHeight", 362)] * len(frames))
         if len(heights) != len(frames) or any(not isinstance(x, (int, float)) or x <= 0 for x in heights):
             failures.append(f"invalid display heights: {key}")

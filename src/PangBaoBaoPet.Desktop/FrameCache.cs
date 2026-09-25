@@ -9,11 +9,13 @@ namespace PangBaoBaoPet;
 public sealed class FrameCache
 {
     private const long BudgetBytes = 128L * 1024 * 1024;
+    private const int MaxPendingPrefetch = 2;
     private readonly object _gate = new();
     private readonly Dictionary<string, LinkedListNode<Entry>> _entries = new(StringComparer.OrdinalIgnoreCase);
     private readonly LinkedList<Entry> _recent = new();
     private readonly HashSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
     private long _bytes;
+    private int _pendingCount;
 
     private sealed record Entry(string Path, BitmapImage Image, long Bytes);
 
@@ -63,13 +65,21 @@ public sealed class FrameCache
     {
         lock (_gate)
         {
-            if (_entries.ContainsKey(path) || !_pending.Add(path)) return;
+            if (_entries.ContainsKey(path) || _pendingCount >= MaxPendingPrefetch || !_pending.Add(path)) return;
+            _pendingCount++;
         }
         _ = Task.Run(() =>
         {
             try { Get(path); }
             catch (Exception) { /* The visible frame load reports the error when needed. */ }
-            finally { lock (_gate) _pending.Remove(path); }
+            finally
+            {
+                lock (_gate)
+                {
+                    _pending.Remove(path);
+                    _pendingCount--;
+                }
+            }
         });
     }
 }

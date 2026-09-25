@@ -503,9 +503,10 @@ public partial class MainWindow : Window
         if (SpeechBubble.Visibility != Visibility.Visible) return;
         SpeechBubble.Measure(new Size(260, double.PositiveInfinity));
         var height = SpeechBubble.DesiredSize.Height;
-        var head = PetImage.TranslatePoint(new Point(PetImage.ActualWidth * _action.HeadX,
-            PetImage.ActualHeight * _action.HeadY), Root);
+        var head = AnchorOnRoot(_action.FrameHeadAnchors);
+        var mouth = AnchorOnRoot(_action.FrameMouthAnchors);
         if (!double.IsFinite(head.X) || !double.IsFinite(head.Y)) head = new Point(280, 155);
+        if (!double.IsFinite(mouth.X) || !double.IsFinite(mouth.Y)) mouth = head;
         const double width = 260;
         var area = GetCurrentWorkArea();
         var preferLeft = Left + Width / 2 > area.Left + area.Width / 2;
@@ -514,11 +515,11 @@ public partial class MainWindow : Window
         var top = Math.Clamp(head.Y - height - 38, 8, Root.Height - height - 8);
         Canvas.SetLeft(SpeechBubble, left);
         Canvas.SetTop(SpeechBubble, top);
-        var baseX = head.X > left + width / 2 ? left + width - 35 : left + 35;
+        var baseX = mouth.X > left + width / 2 ? left + width - 35 : left + 35;
         var bottom = top + height - 2;
         var figure = new PathFigure(new Point(baseX - 11, bottom), new PathSegment[]
         {
-            new LineSegment(new Point(head.X, Math.Max(bottom + 5, head.Y - 8)), true),
+            new LineSegment(new Point(mouth.X, Math.Max(bottom + 5, mouth.Y - 8)), true),
             new LineSegment(new Point(baseX + 11, bottom), true)
         }, true);
         BubbleTail.Data = new PathGeometry(new[] { figure });
@@ -541,8 +542,7 @@ public partial class MainWindow : Window
 
     private void SpawnHeart(int points)
     {
-        var head = PetImage.TranslatePoint(new Point(PetImage.ActualWidth * 0.5,
-            PetImage.ActualHeight * 0.14), Root);
+        var head = AnchorOnRoot(_action.FrameHeadAnchors);
         var effect = new TextBlock
         {
             Text = points > 0 ? $"♥ +{points}" : "♥",
@@ -563,6 +563,16 @@ public partial class MainWindow : Window
         effect.BeginAnimation(OpacityProperty, fade);
         effect.BeginAnimation(Canvas.TopProperty,
             new DoubleAnimation(head.Y - 20, head.Y - 75, TimeSpan.FromMilliseconds(1600)));
+    }
+
+    private Point AnchorOnRoot(IReadOnlyList<(double X, double Y)> anchors)
+    {
+        if (anchors.Count == 0 || PetImage.ActualWidth <= 0 || PetImage.ActualHeight <= 0)
+            return new Point(Root.Width / 2, Root.Height / 3);
+        var index = Math.Clamp(_frameIndex, 0, anchors.Count - 1);
+        var anchor = anchors[index];
+        return PetImage.TranslatePoint(new Point(PetImage.ActualWidth * anchor.X,
+            PetImage.ActualHeight * anchor.Y), Root);
     }
 
     private void RegisterInteraction(PetInteraction kind, bool headClick)
@@ -689,8 +699,10 @@ public partial class MainWindow : Window
         PetImage.ReleaseMouseCapture();
         var point = e.GetPosition(PetImage);
         if (!IsOpaqueAt(PetImage, point)) return;
-        var headClick = point.Y < PetImage.ActualHeight * 0.35 &&
-            point.X > PetImage.ActualWidth * 0.25 && point.X < PetImage.ActualWidth * 0.75;
+        var head = _action.FrameHeadAnchors[Math.Clamp(_frameIndex, 0, _action.FrameHeadAnchors.Count - 1)];
+        var dx = (point.X - PetImage.ActualWidth * head.X) / (PetImage.ActualWidth * 0.23);
+        var dy = (point.Y - PetImage.ActualHeight * head.Y) / (PetImage.ActualHeight * 0.18);
+        var headClick = dx * dx + dy * dy <= 1;
         RegisterInteraction(PetInteraction.Click, headClick);
         e.Handled = true;
     }
