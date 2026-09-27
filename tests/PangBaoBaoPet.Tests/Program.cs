@@ -22,6 +22,30 @@ var movedStage = edgeStage.MoveInto(new StageWindow(0, 0, 1920, 1080));
 Check(movedStage.FitsIn(new StageWindow(0, 0, 1920, 1080)), "Wide stage was not moved fully on screen");
 Check(movedStage.Left == 1152 && movedStage.Bottom == 990, "Wide stage changed the ground while fitting the screen");
 
+var catalogTestRoot = Path.Combine(Path.GetTempPath(), "PangBaoBaoCatalog-" + Guid.NewGuid().ToString("N"));
+try
+{
+    Directory.CreateDirectory(Path.Combine(catalogTestRoot, "good"));
+    File.WriteAllBytes(Path.Combine(catalogTestRoot, "good", "frame_001.png"), Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg=="));
+    File.WriteAllText(Path.Combine(catalogTestRoot, "actions.json"),
+        "[{\"id\":\"idle\",\"skinId\":\"black-tee\",\"assetDirectory\":\"good\",\"frames\":1}," +
+        "{\"id\":\"twist\",\"skinId\":\"black-tee\",\"assetDirectory\":\"missing\",\"frames\":1}]");
+    var available = AnimationCatalog.LoadFrom(catalogTestRoot, out var assetWarnings);
+    Check(available.Count == 1 && available[0].Id == "idle" && assetWarnings.Count == 1 &&
+          assetWarnings[0].Contains("twist"), "Bad asset group disabled the entire catalog");
+    File.WriteAllText(Path.Combine(catalogTestRoot, "actions.json"),
+        "[{\"id\":\"twist\",\"assetDirectory\":\"missing\",\"frames\":1}]");
+    var allBrokenRejected = false;
+    try { AnimationCatalog.LoadFrom(catalogTestRoot, out _); }
+    catch (InvalidDataException) { allBrokenRejected = true; }
+    Check(allBrokenRejected, "Catalog with no playable actions was accepted");
+}
+finally
+{
+    Directory.Delete(catalogTestRoot, recursive: true);
+}
+
 var start = new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.FromHours(8));
 var settings = new AppSettings
 {

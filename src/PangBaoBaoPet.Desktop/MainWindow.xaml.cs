@@ -63,10 +63,13 @@ public partial class MainWindow : Window
         InitializeComponent();
         _settings = SettingsStore.Load(out var settingsWarning);
         _affection = new AffectionService(PetStateStore.Load(out var stateWarning));
-        _actions = AnimationCatalog.Load().ToList();
+        _actions = AnimationCatalog.Load(out var assetWarnings).ToList();
         _action = _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == _settings.ActionId && !a.OneShot)
             ?? _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == "idle")
-            ?? _actions.First(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine);
+            ?? _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine)
+            ?? _actions.First(a => a.Id == "idle" || a.IncludeInRoutine);
+        _settings.SkinId = _action.SkinId;
+        _settings.ActionId = _action.Id;
         _scheduler = new BubbleScheduler(DateTimeOffset.Now, _settings);
         SetFrame(0);
         BuildContextMenu();
@@ -82,8 +85,11 @@ public partial class MainWindow : Window
         {
             RestorePosition();
             CreateChatDock();
-            if (settingsWarning is not null || stateWarning is not null)
-                MessageBox.Show(this, string.Join("\n", new[] { settingsWarning, stateWarning }.Where(x => x is not null)), "胖宝宝桌宠");
+            var startupWarnings = new[] { settingsWarning, stateWarning }
+                .Where(x => x is not null).Cast<string>().Concat(assetWarnings.Take(5)).ToArray();
+            if (startupWarnings.Length > 0)
+                MessageBox.Show(this, string.Join("\n", startupWarnings) +
+                    (assetWarnings.Count > 5 ? $"\n另有 {assetWarnings.Count - 5} 组素材未加载。" : ""), "胖宝宝桌宠");
         };
         IsVisibleChanged += (_, _) =>
         {
@@ -289,8 +295,32 @@ public partial class MainWindow : Window
 
     private void SetFrame(int index)
     {
+        BitmapImage frame;
+        try { frame = _frameCache.Get(_action.FramePaths[index]); }
+        catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException or NotSupportedException)
+        {
+            var broken = _action;
+            _actions.Remove(broken);
+            if (ReferenceEquals(_resumeAction, broken)) _resumeAction = null;
+            var fallback = _resumeAction
+                ?? _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.Id == "idle")
+                ?? _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine)
+                ?? _actions.FirstOrDefault(a => a.Id == "idle" || a.IncludeInRoutine);
+            if (fallback is null) throw new InvalidDataException("没有可用的动作素材。", error);
+            _resumeAction = null;
+            _firstRewardPlaying = null;
+            _advanceRoutineAfterSpecial = false;
+            _pendingShy = false;
+            _positionBeforeWideAction = null;
+            _settings.SkinId = fallback.SkinId;
+            _settings.ActionId = fallback.Id;
+            SetAction(fallback, false);
+            if (IsLoaded) BuildContextMenu();
+            Dispatcher.BeginInvoke(new Action(() =>
+                MessageBox.Show(this, $"动作 {broken.Name} 的图片无法读取，已切换到可用动作。\n{error.Message}", "胖宝宝桌宠")));
+            return;
+        }
         _frameIndex = index;
-        var frame = _frameCache.Get(_action.FramePaths[index]);
         PetImage.Source = frame;
         var height = _action.FrameDisplayHeights[index];
         PetImage.Height = height;

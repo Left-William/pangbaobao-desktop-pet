@@ -12,9 +12,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "src" / "PangBaoBaoPet.Desktop" / "Assets"
-REQUIRED_ACTIONS = {
-    "idle", "stretch", "chest", "bend", "twist", "tiptoe", "sidebend",
-    "shy", "kiss", "roll", "long_jump", "high_jump", "pull_up", "push_up", "street_dance"
+REQUIRED_ACTIONS_BY_SKIN = {
+    # 2026-09-26 scope change: the complete action library ships in pajamas.
+    # Black tee remains a selectable partial skin; its menu lists only installed actions.
+    "pajamas": {
+        "idle", "stretch", "chest", "bend", "twist", "tiptoe", "sidebend",
+        "shy", "kiss", "roll", "long_jump", "high_jump", "pull_up", "push_up", "street_dance"
+    },
+    "black-tee": {"idle"},
 }
 MIN_RELEASE_FRAMES = {
     "stretch": 12, "chest": 12, "bend": 12, "twist": 12, "tiptoe": 12,
@@ -41,7 +46,8 @@ def png_size(path: Path) -> tuple[int, int]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--strict", action="store_true", help="require >=2 source pixels per display DIP")
-    parser.add_argument("--release", action="store_true", help="require density and full action coverage for both skins")
+    parser.add_argument("--release", action="store_true", help="require density and complete pajamas action coverage")
+    parser.add_argument("--preview", action="store_true", help="require the scoped 0.5 preview dance and structural integrity")
     parser.add_argument("--details", action="store_true", help="show every low-density frame")
     args = parser.parse_args()
     actions = json.loads((ASSETS / "actions.json").read_text(encoding="utf-8"))
@@ -80,14 +86,15 @@ def main() -> int:
         if not frames or len(frames) != action.get("frames", len(frames)):
             failures.append(f"frame count mismatch: {key}")
             continue
-        if args.release and key[1] in MIN_RELEASE_FRAMES and len(frames) < MIN_RELEASE_FRAMES[key[1]]:
+        full_action = key[0] == "pajamas"
+        if args.release and full_action and key[1] in MIN_RELEASE_FRAMES and len(frames) < MIN_RELEASE_FRAMES[key[1]]:
             failures.append(f"incomplete action: {key}, {len(frames)} < {MIN_RELEASE_FRAMES[key[1]]} frames")
-        if args.release and key[1] in MIN_RELEASE_DISTINCT_FILES:
+        if args.release and full_action and key[1] in MIN_RELEASE_DISTINCT_FILES:
             distinct = len({hashlib.sha256(frame.read_bytes()).digest() for frame in frames})
             minimum = MIN_RELEASE_DISTINCT_FILES[key[1]]
             if distinct < minimum:
                 failures.append(f"repeated-frame action: {key}, {distinct} < {minimum} distinct PNGs")
-        if args.release and "预览" in action.get("name", ""):
+        if args.release and full_action and "预览" in action.get("name", ""):
             failures.append(f"preview action in release: {key}")
         durations = action.get("durationsMs")
         if durations is not None and (len(durations) != len(frames) or any(x <= 0 for x in durations)):
@@ -119,9 +126,24 @@ def main() -> int:
             except (OSError, ValueError) as error:
                 failures.append(str(error))
     if args.release:
-        for skin in ("pajamas", "black-tee"):
-            for action_id in sorted(REQUIRED_ACTIONS - {id for s, id in seen if s == skin}):
+        for skin, required in REQUIRED_ACTIONS_BY_SKIN.items():
+            for action_id in sorted(required - {id for s, id in seen if s == skin}):
                 failures.append(f"missing release action: {skin}/{action_id}")
+    if args.preview:
+        dance = next((item for item in actions if item.get("skinId", "pajamas") == "pajamas"
+                      and item["id"] == "street_dance"), None)
+        if dance is None:
+            failures.append("missing preview action: pajamas/street_dance")
+        else:
+            frames = sorted((ASSETS / dance["assetDirectory"]).glob("frame_*.png"))
+            distinct = len({hashlib.sha256(frame.read_bytes()).digest() for frame in frames})
+            if len(frames) < 20 or distinct < 13 or dance.get("stageDip", [0, 0])[0] < 768:
+                failures.append(f"incomplete preview dance: {len(frames)} frames, {distinct} distinct PNGs")
+            if any(png_size(frame)[1] / dance.get("displayHeight", 361) < 2 for frame in frames):
+                failures.append("low-density preview dance")
+        for skin in ("pajamas", "black-tee"):
+            if (skin, "idle") not in seen:
+                failures.append(f"missing preview idle: {skin}")
     print(f"Validated {len(actions)} action entries. Failures: {len(failures)}. Below 2 px/DIP: {len(low_density)}.")
     for item in failures:
         label = "RELEASE" if item.startswith(("missing release action", "incomplete action", "preview action", "repeated-frame action")) else "ERROR"

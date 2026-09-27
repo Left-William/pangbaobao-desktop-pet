@@ -59,15 +59,20 @@ public static class AnimationCatalog
         public double HeadY { get; set; } = 0.15;
     }
 
-    public static IReadOnlyList<AnimationAction> Load()
+    public static IReadOnlyList<AnimationAction> Load(out IReadOnlyList<string> warnings) =>
+        LoadFrom(Path.Combine(AppContext.BaseDirectory, "Assets"), out warnings);
+
+    public static IReadOnlyList<AnimationAction> LoadFrom(string root, out IReadOnlyList<string> warnings)
     {
-        var root = Path.Combine(AppContext.BaseDirectory, "Assets");
         var specs = JsonSerializer.Deserialize<List<Spec>>(
             File.ReadAllText(Path.Combine(root, "actions.json")),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? throw new InvalidDataException("No actions");
         var result = new List<AnimationAction>();
+        var problems = new List<string>();
         foreach (var spec in specs)
         {
+            try
+            {
             if (string.IsNullOrWhiteSpace(spec.Id) || spec.Id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
                 spec.Id.Contains("..", StringComparison.Ordinal) ||
                 spec.AssetDirectory is { } directory &&
@@ -77,6 +82,7 @@ public static class AnimationCatalog
             if (paths.Length == 0) throw new InvalidDataException($"No frames: {spec.Id}");
             if (spec.Frames is { } declared && declared != paths.Length)
                 throw new InvalidDataException($"Frame count mismatch: {spec.Id}");
+            foreach (var path in paths) ValidatePngHeader(path);
             if (spec.DurationsMs is { } durations &&
                 (durations.Length != paths.Length || durations.Any(x => x <= 0)))
                 throw new InvalidDataException($"Invalid frame durations: {spec.Id}");
@@ -124,8 +130,30 @@ public static class AnimationCatalog
                     : Enumerable.Repeat((spec.HeadX, Math.Min(1, spec.HeadY + 0.05)), paths.Length).ToArray(),
                 IncludeInRoutine = spec.IncludeInRoutine, OneShot = spec.OneShot,
                 HeadX = spec.HeadX, HeadY = spec.HeadY });
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
+            {
+                problems.Add($"{spec.SkinId}/{spec.Id}: {error.Message}");
+            }
         }
+        warnings = problems;
+        if (result.Count == 0) throw new InvalidDataException("没有可用的动作素材。" +
+            (problems.Count > 0 ? " " + string.Join("; ", problems.Take(3)) : ""));
         return result;
+    }
+
+    private static void ValidatePngHeader(string path)
+    {
+        using var file = File.OpenRead(path);
+        Span<byte> header = stackalloc byte[26];
+        if (file.Read(header) != header.Length ||
+            !header[..8].SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) ||
+            header[25] != 6)
+            throw new InvalidDataException($"不是 RGBA PNG：{Path.GetFileName(path)}");
+        var width = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(header[16..20]);
+        var height = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(header[20..24]);
+        if (width is 0 or > 4096 || height is 0 or > 4096)
+            throw new InvalidDataException($"图片尺寸超限：{Path.GetFileName(path)}");
     }
 
     private static bool ValidAnchors(double[][] anchors, int count) =>

@@ -7,7 +7,7 @@
 <p align="center">一位本该休息的舍友，开始在你的 Windows 桌面认真做广播体操。<br />你摸他的头，他会冒爱心、害羞一下；练着练着，还可能突然开口。</p>
 
 <p align="center">
-  <a href="https://github.com/Left-William/pangbaobao-desktop-pet/releases/tag/v0.3.0-preview.1">⬇️ 下载桌宠</a>
+  <a href="https://github.com/Left-William/pangbaobao-desktop-pet/releases">⬇️ 下载桌宠</a>
   · <a href="#先看节目再请上桌">🎬 看动作</a>
   · <a href="#三分钟上桌">🚀 安装</a>
   · <a href="docs/0.5-实施记录.md">🔬 看 0.5 进度</a>
@@ -20,11 +20,13 @@
 
 这是一个**独立 Windows 桌面程序**。人物以透明窗口悬浮在桌面上，可以拖动、缩放、置顶；默认循环播放六节广播体操。右键可以固定某一节，也能让他暂停。系统托盘里有设置和退出入口。
 
-人物参考了用户提供的舍友照片。仓库公开下载仍是 **0.3.0-preview.1**；当前工作区正在制作 **0.5.0-preview.1**，新增睡衣／黑 T 恤切换、可自行配置的兼容对话 API 和项目化构建入口。两套站立母版已获“基本像，可继续”反馈；边缘质量与高强度动作仍在视觉验收中，具体差距见 [实施记录](docs/0.5-实施记录.md)。
+人物参考了用户提供的舍友照片。**0.5.0-preview.1** 聚焦睡衣街舞，同时加入睡衣／黑 T 恤切换、可自行配置的兼容对话 API 和项目化构建入口。两套站立母版已获“基本像，可继续”反馈；其他尚未补齐的动作留给后续版本，差距见 [实施记录](docs/0.5-实施记录.md)。
 
 ### 0.5 开发预览里的服装和对话
 
-右键 **「服装」** 可在印花睡衣与黑 T 恤之间切换。当前若在播一次性动作，切换会等动作结束后生效。两套服装现在都有九帧写真伸展、十一帧写真扩胸和九帧写真体前屈预览；黑 T 恤的自动广播操在这三节之间循环。黑 T 恤另有点击娇羞、六帧跳高、六帧向右跳远和十五帧两次俯卧撑关键姿势预览。俯卧撑使用六张不同画面，横向动作会临时展开透明窗口；其余三节黑 T 恤广播操、引体向上和街舞仍缺写真素材。0.5 仍是开发预览，逐帧检查见 [实施记录](docs/0.5-实施记录.md)。
+右键 **「服装」** 可在印花睡衣与黑 T 恤之间切换。当前若在播一次性动作，切换会等动作结束后生效。穿睡衣时，右键 **「运动动作」→「街舞组合」** 可播放约 5 秒的交叉步、下地、两圈风车、定格和起身。街舞是 20 个播放帧、13 张不同画面编排的写真关键姿势剪辑；动作快速、幅度大，姿势之间仍有可见跳变。横向风车会临时展开透明舞台，结束后恢复。黑 T 恤皮肤目前没有街舞；菜单只列出当前服装已安装的动作。[看街舞动图](docs/qa/v0.5/pajamas-street-dance.webp) · [逐帧检查](docs/qa/v0.5/street-dance-pajamas-2026-09-26.md)。
+
+两套服装都有写真伸展、扩胸、体前屈、转体、摸头娇羞和飞吻关键姿势。黑 T 恤另有跳高、跳远和俯卧撑预览。睡衣旧版踮脚、侧弯、打滚仍有低清帧，睡衣跳跃、引体和俯卧撑，以及黑 T 恤街舞留待后续更新。0.5 仍是预览，不等于 [0.5 工程规划](docs/0.5-工程规划.md)中的正式完成标准。
 
 桌宠下方的 **💬 图标** 可展开对话框，直接发送消息、设置兼容 chat completions 的完整 HTTPS 端点、模型和密钥，也可编辑独立人设。点击「−」收起；聊天闲置 2 分钟、配置页闲置 5 分钟会自动缩回图标。屏幕下方空间不足时，对话框会优先挪动桌宠，仍放不下就贴在侧边。密钥使用 Windows 当前用户 DPAPI 加密保存在本机；未配置外部服务时使用本地台词。默认只在你手动发送或测试连接时调用外部服务；你也可以单独开启有次数上限的自动气泡回复。程序不会上传参考照片或屏幕内容。接口对不同供应商的兼容范围须用你填写的真实 API 再测。
 
@@ -49,7 +51,7 @@
   <img src="docs/qa/v03-tiptoe.webp" width="300" alt="0.3 踮脚动作循环预览" />
 </p>
 
-公开 0.3 版的这三节从 0.2 的离线 RIFE 补帧中挑选过渡姿势，给起势、到位和收势分别设定停留时间。当前 0.5 工作区把伸展、扩胸和体前屈替换成双服装写真关键姿势；转体、踮脚和侧弯仍沿用旧版素材。运行时不调用 RIFE，九帧也不等于九张不同姿势。
+公开 0.3 版的这三节从 0.2 的离线 RIFE 补帧中挑选过渡姿势，给起势、到位和收势分别设定停留时间。当前 0.5 工作区把伸展、扩胸、体前屈和转体替换成双服装写真关键姿势；踮脚和侧弯仍沿用睡衣旧版素材。0.3 原版对照动作没有进入 0.5 播放清单或预览包。运行时不调用 RIFE，九帧也不等于九张不同姿势。
 
 ## 摸头会怎样
 
@@ -75,11 +77,11 @@
 
 ## 三分钟上桌
 
-1. 从 [Releases](https://github.com/Left-William/pangbaobao-desktop-pet/releases) 下载 `PangBaoBaoPet-0.3.0-preview.1-win-x64.zip`，解压整个文件夹。
-2. 安装 [Microsoft .NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)（Windows 10/11 x64）。
+1. 从 [Releases](https://github.com/Left-William/pangbaobao-desktop-pet/releases) 下载 `PangBaoBaoPet-0.5.0-preview.1-win-x64-selfcontained.zip` 并完整解压，或使用同版本 `setup.exe` 安装。
+2. 自包含包无需另装 .NET；普通 `win-x64.zip` 才需要 [Microsoft .NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)（Windows 10/11 x64）。
 3. 双击 `PangBaoBaoPet.exe`。左键点击人物头部摸头、拖动人物换位置；右键选择动作、速度、缩放、置顶、气泡设置和退出。
 
-没有看到人时，检查系统托盘中的 **「胖宝宝桌宠」→「显示桌宠」**。桌宠的 EXE 与 `Assets` 文件夹需要保持在一起。当前 ZIP 是依赖 .NET 8 Desktop Runtime 的版本，尚未提供自包含安装包。详细步骤见 [安装说明](docs/安装说明.md)。
+没有看到人时，检查系统托盘中的 **「胖宝宝桌宠」→「显示桌宠」**。桌宠的 EXE 与 `Assets` 文件夹需要保持在一起。自包含包已在本机封装检查；尚未完成干净机器安装验收。详细步骤见 [安装说明](docs/安装说明.md)。
 
 ## 给想拆开看的人
 
@@ -88,12 +90,13 @@
 ```text
 PangBaoBaoPet.sln              四项目解决方案
 src/PangBaoBaoPet.Desktop/      WPF 窗口、动画播放器和随包素材
-src/PangBaoBaoPet.Core/         设置、气泡调度与好感度规则
+src/PangBaoBaoPet.Core/         动作清单、设置、气泡调度与好感度规则
 src/PangBaoBaoPet.Infrastructure/ 外部对话适配与人设存储
 tests/PangBaoBaoPet.Tests/      离线规则与模拟 API 契约测试
 config/defaults/persona.md     可恢复的人设默认模板
 art/source/v0.3/               旧版原帧与生成源图，仅供追溯
 tools/                         构建、测试、打包与素材检查入口
+installer/                     Inno Setup 安装脚本（编译器不入库）
 archive/v0.3-tools/            旧版离线制作脚本
 docs/0.5-实施记录.md            当前验证结果与未完成项
 ```
@@ -105,13 +108,16 @@ docs/0.5-实施记录.md            当前验证结果与未完成项
 .\tools\test.ps1
 python .\tools\assets\validate_assets.py
 .\tools\package.ps1
+.\tools\package.ps1 -SelfContained
+.\tools\package.ps1 -Installer
+.\tools\package.ps1 -Installer -PreviewCandidate
 ```
 
-旧版离线制作脚本已归档，正常构建**无需执行**它们。`package.ps1` 生成依赖 .NET 8 Desktop Runtime 的本地预览 ZIP；带 `-SelfContained` 可制作自包含包，带 `-ReleaseCandidate` 会执行正式素材门槛与测试。0.5 的发布检查目前会因旧帧清晰度与双服装动作覆盖不足而失败，不能把普通打包成功当成正式视觉验收。
+旧版离线制作脚本已归档，正常构建**无需执行**它们。`package.ps1` 生成依赖 .NET 8 Desktop Runtime 的 ZIP；带 `-SelfContained` 制作自包含包，带 `-Installer` 使用另装的 Inno Setup 7 编译自包含安装包。`-PreviewCandidate` 检查本次睡衣街舞范围与规则测试；`-ReleaseCandidate` 执行完整 0.5 素材门槛与测试，当前仍会因其余动作缺口失败。
 
 ## 目前的真实进度
 
-- 当前 0.5 工作区的两套写真伸展各九帧、写真扩胸各十一帧、写真体前屈各九帧；侧弯等仍沿用旧素材，完整视觉一致性尚待持续打磨。
+- 0.5 预览完成睡衣街舞关键姿势编排；两套写真伸展各九帧、扩胸各十一帧、体前屈各九帧、转体各十二帧。踮脚和侧弯等仍沿用旧素材，完整视觉一致性尚待持续打磨。
 - 特殊动作采用参考真人照片生成的关键姿势，经透明边缘清理；不同动作的清晰度和衣纹仍不完全一致。
 - 本机已经完成候选构建、气泡与好感度规则测试和窗口预览；不同电脑、多显示器及真人手势体验仍待反馈。
 - 素材包含可辨认的人物肖像。请尊重照片人物，不要擅自挪用或再发布其形象。本仓库暂未附通用开源许可证。

@@ -4,6 +4,7 @@
 dist/
 .vs/
 .dotnet/
+.nuget/
 .templateengine/
 *.user
 *.suo
