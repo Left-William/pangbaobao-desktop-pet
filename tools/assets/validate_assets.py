@@ -141,6 +141,21 @@ def main() -> int:
                 failures.append(f"incomplete preview dance: {len(frames)} frames, {distinct} distinct PNGs")
             if any(png_size(frame)[1] / dance.get("displayHeight", 361) < 2 for frame in frames):
                 failures.append("low-density preview dance")
+        for action_id, expected_frames in (("lock_dance", 6), ("moonwalk", 6), ("flare_dance", 8)):
+            step = next((item for item in actions if item.get("skinId", "pajamas") == "pajamas"
+                         and item["id"] == action_id), None)
+            if step is None:
+                failures.append(f"missing short dance: pajamas/{action_id}")
+                continue
+            step_frames = sorted((ASSETS / step["assetDirectory"]).glob("frame_*.png"))
+            duration = sum(step.get("durationsMs", []))
+            distinct = len({hashlib.sha256(frame.read_bytes()).digest() for frame in step_frames})
+            if (len(step_frames) != expected_frames or distinct < 3 or not 1000 <= duration <= 2000
+                    or step.get("stageDip") != [768, 576] or not step.get("oneShot")
+                    or step.get("includeInRoutine") is not False):
+                failures.append(f"incomplete short dance: pajamas/{action_id}")
+            if any(png_size(frame)[1] / step.get("displayHeight", 361) < 2 for frame in step_frames):
+                failures.append(f"low-density short dance: pajamas/{action_id}")
         for skin in ("pajamas", "black-tee"):
             if (skin, "idle") not in seen:
                 failures.append(f"missing preview idle: {skin}")

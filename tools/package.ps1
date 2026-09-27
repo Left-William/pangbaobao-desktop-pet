@@ -1,4 +1,4 @@
-param([switch]$SelfContained, [switch]$Installer, [switch]$PreviewCandidate, [switch]$ReleaseCandidate)
+﻿param([switch]$SelfContained, [switch]$Installer, [switch]$PreviewCandidate, [switch]$ReleaseCandidate)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $portableDotnet = Join-Path $projectRoot '..\work\dotnet8\sdk\dotnet.exe'
@@ -6,7 +6,7 @@ $dotnetCli = if (Test-Path -LiteralPath $portableDotnet) { (Resolve-Path $portab
 $env:DOTNET_CLI_HOME = $projectRoot
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 if ($Installer) { $SelfContained = $true }
-$packageName = if ($SelfContained) { 'PangBaoBaoPet-0.5.0-preview.1-win-x64-selfcontained' } else { 'PangBaoBaoPet-0.5.0-preview.1-win-x64' }
+$packageName = if ($SelfContained) { 'PangBaoBaoPet-0.5.0-preview.2-win-x64-selfcontained' } else { 'PangBaoBaoPet-0.5.0-preview.2-win-x64' }
 $distRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'dist'))
 $target = [System.IO.Path]::GetFullPath((Join-Path $distRoot $packageName))
 $zip = [System.IO.Path]::GetFullPath((Join-Path $distRoot "$packageName.zip"))
@@ -50,7 +50,7 @@ try {
         }
         & $iscc 'installer\PangBaoBaoPet.iss'
         if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
-        $setup = Join-Path $distRoot 'PangBaoBaoPet-0.5.0-preview.1-win-x64-setup.exe'
+        $setup = Join-Path $distRoot 'PangBaoBaoPet-0.5.0-preview.2-win-x64-setup.exe'
         if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Installer output missing' }
         Get-Item -LiteralPath $setup | Select-Object FullName,Length
         Get-FileHash -LiteralPath $setup -Algorithm SHA256 | Select-Object Hash

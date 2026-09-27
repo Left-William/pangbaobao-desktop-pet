@@ -270,5 +270,53 @@
     "displayHeight": 361,
     "includeInRoutine": false,
     "oneShot": true
+  },
+  {
+    "id": "lock_dance",
+    "name": "机械锁舞（短舞步）",
+    "skinId": "pajamas",
+    "category": "exercise",
+    "assetDirectory": "pajamas_lock_dance_photo",
+    "stageDip": [768, 576],
+    "frames": 6,
+    "durationsMs": [180, 160, 360, 150, 360, 250],
+    "frameOffsets": [[0, 0], [-8, -1], [0, 8], [8, 5], [0, 8], [0, 0]],
+    "frameHeadAnchors": [[0.5, 0.16], [0.52, 0.16], [0.62, 0.18], [0.5, 0.16], [0.62, 0.18], [0.5, 0.16]],
+    "frameMouthAnchors": [[0.5, 0.22], [0.52, 0.22], [0.62, 0.24], [0.5, 0.22], [0.62, 0.24], [0.5, 0.22]],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
+  },
+  {
+    "id": "moonwalk",
+    "name": "横移滑步（短舞步）",
+    "skinId": "pajamas",
+    "category": "exercise",
+    "assetDirectory": "pajamas_moonwalk_photo",
+    "stageDip": [768, 576],
+    "frames": 6,
+    "durationsMs": [160, 170, 300, 170, 300, 260],
+    "frameOffsets": [[0, 0], [-35, 5], [-65, 15], [0, -1], [65, 15], [0, 0]],
+    "frameHeadAnchors": [[0.5, 0.16], [0.5, 0.16], [0.55, 0.13], [0.52, 0.16], [0.55, 0.13], [0.5, 0.16]],
+    "frameMouthAnchors": [[0.5, 0.22], [0.5, 0.22], [0.55, 0.19], [0.52, 0.22], [0.55, 0.19], [0.5, 0.22]],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
+  },
+  {
+    "id": "flare_dance",
+    "name": "托马斯回旋（短舞步）",
+    "skinId": "pajamas",
+    "category": "exercise",
+    "assetDirectory": "pajamas_flare_dance_photo",
+    "stageDip": [768, 576],
+    "frames": 8,
+    "durationsMs": [120, 160, 150, 300, 180, 300, 320, 220],
+    "frameOffsets": [[0, 0], [0, 26], [0, 20], [0, 6], [0, -4], [0, 2], [0, 0], [0, 0]],
+    "frameHeadAnchors": [[0.5, 0.16], [0.43, 0.17], [0.28, 0.4], [0.36, 0.31], [0.42, 0.68], [0.72, 0.76], [0.42, 0.17], [0.5, 0.16]],
+    "frameMouthAnchors": [[0.5, 0.22], [0.43, 0.23], [0.28, 0.46], [0.36, 0.37], [0.42, 0.74], [0.72, 0.82], [0.42, 0.23], [0.5, 0.22]],
+    "displayHeight": 361,
+    "includeInRoutine": false,
+    "oneShot": true
   }
 ]

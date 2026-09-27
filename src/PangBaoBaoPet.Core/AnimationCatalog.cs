@@ -27,6 +27,27 @@ public sealed class AnimationAction
     public double HeadY { get; init; } = 0.15;
     public double Duration => FrameEnds[^1];
 
+    public AnimationAction AsLoop() => new()
+    {
+        Id = Id,
+        Name = Name,
+        SkinId = SkinId,
+        Category = Category,
+        FramePaths = FramePaths,
+        FrameEnds = FrameEnds,
+        FrameDisplayHeights = FrameDisplayHeights,
+        FrameOffsets = FrameOffsets,
+        FrameHeadAnchors = FrameHeadAnchors,
+        FrameMouthAnchors = FrameMouthAnchors,
+        StageWidth = StageWidth,
+        StageHeight = StageHeight,
+        DisplayHeight = DisplayHeight,
+        IncludeInRoutine = false,
+        OneShot = false,
+        HeadX = HeadX,
+        HeadY = HeadY
+    };
+
     public int FrameAt(double seconds)
     {
         var offset = OneShot ? Math.Min(seconds, Duration - 0.000001) : seconds % Duration;

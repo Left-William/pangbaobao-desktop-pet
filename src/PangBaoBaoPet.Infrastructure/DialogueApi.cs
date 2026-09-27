@@ -256,7 +256,8 @@ public sealed class DialogueService(HttpClient client)
 {
     private static readonly HashSet<string> Emotions = new(StringComparer.Ordinal) { "neutral", "happy", "shy", "tired", "teasing" };
     private static readonly HashSet<string> Actions = new(StringComparer.Ordinal)
-        { "none", "shy", "kiss", "roll", "long_jump", "high_jump", "pull_up", "push_up", "street_dance" };
+        { "none", "shy", "kiss", "roll", "long_jump", "high_jump", "pull_up", "push_up",
+          "street_dance", "lock_dance", "moonwalk", "flare_dance" };
 
     public async Task<PetReply> SendAsync(DialogueApiOptions options, string apiKey, string persona,
         string userText, string eventType, string actionId, int affection, CancellationToken cancellationToken,

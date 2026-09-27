@@ -1,6 +1,6 @@
 #define AppName "胖宝宝桌宠"
-#define AppVersion "0.5.0-preview.1"
-#define PackageName "PangBaoBaoPet-0.5.0-preview.1-win-x64-selfcontained"
+#define AppVersion "0.5.0-preview.2"
+#define PackageName "PangBaoBaoPet-0.5.0-preview.2-win-x64-selfcontained"
 
 [Setup]
 AppId={{A3F33154-D202-4CB7-8F81-F5EFE821DE5E}
@@ -13,7 +13,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\dist
-OutputBaseFilename=PangBaoBaoPet-0.5.0-preview.1-win-x64-setup
+OutputBaseFilename=PangBaoBaoPet-0.5.0-preview.2-win-x64-setup
 SetupIconFile=..\src\PangBaoBaoPet.Desktop\Assets\pet.ico
 UninstallDisplayIcon={app}\PangBaoBaoPet.exe
 Compression=lzma2

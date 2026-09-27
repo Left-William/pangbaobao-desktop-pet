@@ -39,6 +39,9 @@ public partial class MainWindow : Window
     private AppSettings _settings;
     private AnimationAction _action;
     private AnimationAction? _resumeAction;
+    private AnimationAction? _manualLoopAction;
+    private AnimationAction? _manualLoopReturnAction;
+    private AnimationAction? _pendingManualLoopAction;
     private StageWindow? _positionBeforeWideAction;
     private MenuItem? _affectionMenu;
     private string? _firstRewardPlaying;
@@ -46,6 +49,7 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _autoDialogueRequest;
     private bool _advanceRoutineAfterSpecial;
     private bool _pendingShy;
+    private bool _stopManualLoopOnResume;
     private bool _paused;
     private bool _pointerDown;
     private bool _placingChatDock;
@@ -139,14 +143,25 @@ public partial class MainWindow : Window
     private void BuildContextMenu()
     {
         var menu = new ContextMenu();
-        var routine = new MenuItem { Header = "整套广播体操", IsCheckable = true, IsChecked = _settings.AutoRoutine };
-        routine.Click += (_, _) => { _settings.AutoRoutine = routine.IsChecked; SaveSettings(); };
+        var routine = new MenuItem { Header = "整套广播体操", IsCheckable = true,
+            IsChecked = _settings.AutoRoutine && _manualLoopAction is null };
+        routine.Click += (_, _) =>
+        {
+            if (_manualLoopAction is not null)
+            {
+                ReturnToBroadcast();
+                return;
+            }
+            _settings.AutoRoutine = routine.IsChecked;
+            SaveSettings();
+        };
         menu.Items.Add(routine);
         foreach (var action in _actions.Where(a => a.SkinId == _settings.SkinId && !a.OneShot && a.Category == "routine"))
         {
             var item = new MenuItem { Header = $"单节循环：{action.Name}" };
             item.Click += (_, _) =>
             {
+                ClearManualLoop();
                 _settings.AutoRoutine = false;
                 routine.IsChecked = false;
                 _resumeAction = null;
@@ -159,9 +174,22 @@ public partial class MainWindow : Window
         var exercises = new MenuItem { Header = "运动动作" };
         foreach (var action in _actions.Where(a => a.SkinId == _settings.SkinId && a.Category == "exercise"))
         {
-            var item = new MenuItem { Header = action.Name };
-            item.Click += (_, _) => StartSpecial(action.Id, firstReward: false, advanceRoutine: false);
-            exercises.Items.Add(item);
+            var actionMenu = new MenuItem { Header = action.Name };
+            var once = new MenuItem { Header = "播放一次" };
+            once.Click += (_, _) => StartSpecial(action.Id, firstReward: false, advanceRoutine: false);
+            var loop = new MenuItem { Header = "单独循环", IsCheckable = true,
+                IsChecked = _manualLoopAction?.Id == action.Id };
+            loop.Click += (_, _) => StartManualLoop(action);
+            actionMenu.Items.Add(once);
+            actionMenu.Items.Add(loop);
+            exercises.Items.Add(actionMenu);
+        }
+        if (_manualLoopAction is not null)
+        {
+            exercises.Items.Add(new Separator());
+            var back = new MenuItem { Header = "返回广播体操" };
+            back.Click += (_, _) => ReturnToBroadcast();
+            exercises.Items.Add(back);
         }
         if (exercises.Items.Count > 0) menu.Items.Add(exercises);
         var skins = new MenuItem { Header = "服装" };
@@ -279,8 +307,61 @@ public partial class MainWindow : Window
         SetFrame(0);
     }
 
+    private void StartManualLoop(AnimationAction source)
+    {
+        if (_paused || !IsVisible) return;
+        if (_action.OneShot)
+        {
+            _pendingManualLoopAction = source;
+            return;
+        }
+        var workArea = GetCurrentWorkArea();
+        if (source.StageWidth * _settings.Scale > workArea.Width ||
+            source.StageHeight * _settings.Scale > workArea.Height)
+        {
+            MessageBox.Show(this, "这个动作需要更宽的桌面空间，请调小桌宠。", "空间不足");
+            return;
+        }
+        _manualLoopReturnAction ??= _action;
+        _manualLoopAction = source.AsLoop();
+        _stopManualLoopOnResume = false;
+        _pendingManualLoopAction = null;
+        _resumeAction = null;
+        SetAction(_manualLoopAction, false);
+        BuildContextMenu();
+    }
+
+    private void ReturnToBroadcast()
+    {
+        if (_manualLoopAction is null) return;
+        if (_action.OneShot)
+        {
+            _stopManualLoopOnResume = true;
+            _pendingManualLoopAction = null;
+            return;
+        }
+        var resume = _manualLoopReturnAction;
+        ClearManualLoop();
+        _settings.AutoRoutine = true;
+        var next = resume is { SkinId: var skin, OneShot: false } && skin == _settings.SkinId
+            ? resume
+            : _actions.FirstOrDefault(a => a.SkinId == _settings.SkinId && a.IncludeInRoutine);
+        if (next is not null) SetAction(next, false);
+        SaveSettings();
+        BuildContextMenu();
+    }
+
+    private void ClearManualLoop()
+    {
+        _manualLoopAction = null;
+        _manualLoopReturnAction = null;
+        _pendingManualLoopAction = null;
+        _stopManualLoopOnResume = false;
+    }
+
     private void ApplySkin(string skinId)
     {
+        ClearManualLoop();
         var next = _actions.FirstOrDefault(a => a.SkinId == skinId && a.Id == _action.Id && !a.OneShot)
             ?? _actions.FirstOrDefault(a => a.SkinId == skinId && a.Id == "idle")
             ?? _actions.First(a => a.SkinId == skinId && a.IncludeInRoutine);
@@ -308,6 +389,7 @@ public partial class MainWindow : Window
                 ?? _actions.FirstOrDefault(a => a.Id == "idle" || a.IncludeInRoutine);
             if (fallback is null) throw new InvalidDataException("没有可用的动作素材。", error);
             _resumeAction = null;
+            ClearManualLoop();
             _firstRewardPlaying = null;
             _advanceRoutineAfterSpecial = false;
             _pendingShy = false;
@@ -356,7 +438,7 @@ public partial class MainWindow : Window
             {
                 _lastCycle = cycle;
                 if (TryStartPending()) return;
-                if (_settings.AutoRoutine)
+                if (_settings.AutoRoutine && _manualLoopAction is null)
                 {
                     SetAction(NextRoutine(_action), false);
                     return;
@@ -373,7 +455,8 @@ public partial class MainWindow : Window
     {
         if (!_settings.AffectionEnabled || _paused || !IsVisible) return false;
         var id = _affection.NextPending();
-        return id is not null && StartSpecial(id, firstReward: true, advanceRoutine: _settings.AutoRoutine);
+        return id is not null && StartSpecial(id, firstReward: true,
+            advanceRoutine: _settings.AutoRoutine && _manualLoopAction is null);
     }
 
     private bool StartSpecial(string id, bool firstReward, bool advanceRoutine)
@@ -428,7 +511,8 @@ public partial class MainWindow : Window
         }
         _firstRewardPlaying = null;
         var resume = _resumeAction ?? _actions.First(a => a.IncludeInRoutine);
-        if (_advanceRoutineAfterSpecial && _settings.AutoRoutine) resume = NextRoutine(resume);
+        if (_advanceRoutineAfterSpecial && _settings.AutoRoutine && _manualLoopAction is null)
+            resume = NextRoutine(resume);
         _resumeAction = null;
         _advanceRoutineAfterSpecial = false;
         SetAction(resume, false);
@@ -440,6 +524,9 @@ public partial class MainWindow : Window
             _positionBeforeWideAction = null;
         }
         if (_pendingSkinId is { } pendingSkin) ApplySkin(pendingSkin);
+        if (_stopManualLoopOnResume) ReturnToBroadcast();
+        if (_pendingManualLoopAction is { } nextLoop && !_action.OneShot && nextLoop.SkinId == _settings.SkinId)
+            StartManualLoop(nextLoop);
         if (finished is "kiss" or "roll") MaybeShowContext(finished, forced: true);
         if (_pendingShy)
         {
@@ -759,6 +846,9 @@ public partial class MainWindow : Window
         _positionBeforeWideAction = null;
         SetAction(resume, false);
         if (_pendingSkinId is { } skin) ApplySkin(skin);
+        if (_stopManualLoopOnResume) ReturnToBroadcast();
+        if (_pendingManualLoopAction is { } nextLoop && nextLoop.SkinId == _settings.SkinId)
+            StartManualLoop(nextLoop);
     }
 
     private void PetImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)

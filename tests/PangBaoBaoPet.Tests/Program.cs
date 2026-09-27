@@ -22,6 +22,20 @@ var movedStage = edgeStage.MoveInto(new StageWindow(0, 0, 1920, 1080));
 Check(movedStage.FitsIn(new StageWindow(0, 0, 1920, 1080)), "Wide stage was not moved fully on screen");
 Check(movedStage.Left == 1152 && movedStage.Bottom == 990, "Wide stage changed the ground while fitting the screen");
 
+var shortDance = new AnimationAction
+{
+    Id = "lock_dance", SkinId = "pajamas", Category = "exercise", OneShot = true,
+    FramePaths = ["first.png", "second.png"], FrameEnds = [0.2, 1.4],
+    FrameDisplayHeights = [361, 361], FrameOffsets = [(0, 0), (8, 5)],
+    StageWidth = 768, StageHeight = 576
+};
+var danceLoop = shortDance.AsLoop();
+Check(shortDance.OneShot && shortDance.FrameAt(1.45) == 1, "Original one-shot was changed");
+Check(!danceLoop.OneShot && !danceLoop.IncludeInRoutine && danceLoop.FrameAt(1.45) == 0,
+    "Manual dance did not wrap at the end");
+Check(danceLoop.StageWidth == 768 && danceLoop.FrameOffsets[1] == (8, 5),
+    "Manual dance lost stage or frame metadata");
+
 var catalogTestRoot = Path.Combine(Path.GetTempPath(), "PangBaoBaoCatalog-" + Guid.NewGuid().ToString("N"));
 try
 {
